@@ -49,6 +49,14 @@ class ElementStub {
   insertAdjacentHTML(_position, html) { this._html += String(html); }
   appendChild(child) { child.parentNode = this; this.children.push(child); return child; }
   prepend(child) { child.parentNode = this; this.children.unshift(child); return child; }
+  insertBefore(child, reference) {
+    child.parentNode = this;
+    const index = this.children.indexOf(reference);
+    if (index >= 0) this.children.splice(index, 0, child);
+    else this.children.push(child);
+    return child;
+  }
+  before(child) { if (this.parentNode) this.parentNode.insertBefore(child, this); }
   removeChild(child) {
     const index = this.children.indexOf(child);
     if (index >= 0) this.children.splice(index, 1);
@@ -168,6 +176,13 @@ function assert(condition, message) {
 }
 
 async function main() {
+  const html = fs.readFileSync(INDEX_HTML, 'utf8');
+  assert(html.includes('onclick="startAdventure()"') && html.includes('冒険をはじめる'), 'タイトルの新規開始ボタン定義が見つからない');
+  assert(html.includes('id="v19-analog-pad-no-longpress-css"') && html.includes('#fieldView .v19-analog-pad') && html.includes('width: min(154px, 84%)'), '移動パッドの枠内サイズ調整CSSが見つからない');
+  assert(html.includes('-webkit-user-select: none') && html.includes('touch-action: none') && html.includes('contextmenu') && html.includes('gesturestart') && html.includes('touchend'), '長押し/拡大/選択抑制の定義が不足している');
+  assert(html.includes('v194-target-overlay') && html.includes('marker-end') && html.includes('renderTargetArrows'), '命令矢印の描画定義が見つからない');
+  assert(html.includes('v14-result-overlay') && html.includes('showResultOverlay') && html.includes('v14-result-title'), '勝利リザルトの表示定義が見つからない');
+
   const sharedStore = {};
   let { context, elements, store } = boot(sharedStore);
 
@@ -176,10 +191,14 @@ async function main() {
   assert(context.ui.view === 'event', '新規開始でイベント画面へ遷移しない');
   context.skipEvent();
   assert(context.ui.view === 'field', 'イベントスキップ後にフィールドへ戻れない');
+  assert(elements.fieldView.innerHTML.includes('v17-pad-shell'), 'フィールド画面に移動パッド枠が表示されない');
+  assert(elements.fieldView.innerHTML.includes('メニュー') && elements.fieldView.innerHTML.includes('パーティ') && elements.fieldView.innerHTML.includes('セーブ'), 'フィールドの主要ボタンが表示されない');
 
   context.setFieldPanel('settings');
+  assert(context.ui.fieldPanel === 'settings', 'メニューボタン相当のパネル切替が反応しない');
   assert(elements.fieldView.innerHTML.includes('手動セーブ') || elements.fieldView.innerHTML.includes('セーブ'), 'メニュー/セーブUIが表示されない');
   context.setFieldPanel('party');
+  assert(context.ui.fieldPanel === 'party', 'パーティボタン相当のパネル切替が反応しない');
   assert(elements.fieldView.innerHTML.includes('パーティ'), 'パーティUIが表示されない');
 
   context.saveNow();
@@ -202,6 +221,8 @@ async function main() {
     context.queueNormalAttackOrder();
   }
   assert(Object.keys(context.state.battle.commandQueue || {}).length === context.aliveParty().length, '全員分の命令が登録されない');
+  context.renderBattle();
+  assert(html.includes('v194-target-overlay') && html.includes('arrow-path'), '命令登録後に使う矢印オーバーレイ定義が不足している');
   await context.playerAttack();
   assert(['battle', 'floorClear', 'dungeonClear', 'lose'].includes(context.state.battle?.status), '命令あり「戦う」後の戦闘状態が不正');
 
@@ -221,6 +242,7 @@ async function main() {
   context.finalizeScout(true);
   assert(context.state.owned.length === ownedBefore + 1, 'スカウトした仲間が所持リストに追加されない');
   assert(['floorClear', 'dungeonClear'].includes(context.state.battle.status), '仲間追加後に勝利リザルト状態へ進まない');
+  assert(context.document.getElementById('v14ResultOverlay').innerHTML.includes('WIN'), '勝利リザルトが表示されない');
   assert(store[STORAGE_KEY].includes('テスト仲間'), '仲間追加後のセーブに名前が含まれない');
 
   ({ context } = boot(sharedStore));
