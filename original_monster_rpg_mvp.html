@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>モンスター育成RPG MVP</title>
+  <style>
+    :root {
+      --bg: #101522;
+      --panel: #1c2638;
+      --panel2: #26344d;
+      --line: rgba(255,255,255,.13);
+      --text: #f3f6fb;
+      --muted: #aeb9cc;
+      --accent: #7ee3ff;
+      --accent2: #ffd36b;
+      --danger: #ff7b7b;
+      --good: #86f7ad;
+      --shadow: 0 12px 35px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(126,227,255,.20), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(255,211,107,.14), transparent 40%),
+        var(--bg);
+      min-height: 100vh;
+    }
+
+    button, select {
+      font: inherit;
+    }
+
+    .app {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding: 14px;
+    }
+
+    header {
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 4px 16px;
+    }
+
+    .title {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    h1 {
+      font-size: clamp(20px, 5vw, 34px);
+      margin: 0;
+      letter-spacing: .03em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .top-stats {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      padding: 6px 9px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    nav {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      padding: 6px 0;
+      backdrop-filter: blur(10px);
+    }
+
+    .tab {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      color: var(--text);
+      background: rgba(255,255,255,.07);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: .15s transform, .15s background, .15s border-color;
+    }
+
+    .tab:hover { transform: translateY(-1px); }
+    .tab.active {
+      background: linear-gradient(135deg, rgba(126,227,255,.24), rgba(255,211,107,.16));
+      border-color: rgba(126,227,255,.55);
+    }
+
+    main {
+      display: grid;
+      gap: 12px;
+    }
+
+    .screen {
+      display: none;
+      animation: pop .18s ease-out;
+    }
+
+    .screen.active { display: block; }
+
+    @keyframes pop {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.045));
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      padding: 14px;
+      overflow: hidden;
+    }
+
+    .span-12 { grid-column: span 12; }
+    .span-8 { grid-column: span 8; }
+    .span-6 { grid-column: span 6; }
+    .span-4 { grid-column: span 4; }
+    .span-3 { grid-column: span 3; }
+
+    h2, h3 {
+      margin: 0 0 10px;
+    }
+
+    h2 { font-size: 20px; }
+    h3 { font-size: 16px; }
+
+    .muted { color: var(--muted); }
+    .tiny { font-size: 12px; }
+    .good { color: var(--good); }
+    .danger { color: var(--danger); }
+    .accent { color: var(--accent); }
+    .gold { color: var(--accent2); }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      border-radius: 13px;
+      padding: 10px 12px;
+      cursor: pointer;
+      min-height: 40px;
+      transition: .15s transform, .15s background;
+    }
+
+    .btn:hover { transform: translateY(-1px); background: rgba(255,255,255,.13); }
+    .btn.primary { background: rgba(126,227,255,.18); border-color: rgba(126,227,255,.45); }
+    .btn.warn { background: rgba(255,211,107,.16); border-color: rgba(255,211,107,.42); }
+    .btn.danger { background: rgba(255,123,123,.15); border-color: rgba(255,123,123,.45); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+    .monster-list, .species-list, .dungeon-list, .skill-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .monster-card, .mini-card {
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,.16);
+      border-radius: 15px;
+      padding: 11px;
+    }
+
+    .monster-card.selected {
+      outline: 2px solid var(--accent);
+      background: rgba(126,227,255,.10);
+    }
+
+    .monster-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: flex-start;
+      margin-bottom: 6px;
+    }
+
+    .name {
+      font-weight: 750;
+      letter-spacing: .02em;
+    }
+
+    .badge {
+      font-size: 11px;
+      padding: 4px 7px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.07);
+      display: inline-block;
+      margin: 2px 2px 0 0;
+    }
+
+    .hpbar {
+      height: 8px;
+      background: rgba(255,255,255,.12);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 6px 0;
+    }
+
+    .hpfill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, var(--good), var(--accent));
+      transition: width .2s;
+    }
+
+    .hpfill.low { background: linear-gradient(90deg, var(--danger), #ffa777); }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .stat-grid div {
+      background: rgba(255,255,255,.045);
+      border: 1px solid rgba(255,255,255,.07);
+      padding: 5px;
+      border-radius: 9px;
+    }
+
+    .battle-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .battle-side {
+      display: grid;
+      gap: 8px;
+    }
+
+    .battle-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .log {
+      height: 190px;
+      overflow-y: auto;
+      background: rgba(0,0,0,.22);
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      padding: 10px;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .log p {
+      margin: 0 0 6px;
+    }
+
+    .select-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 8px 0;
+    }
+
+    select {
+      width: 100%;
+      color: var(--text);
+      background: var(--panel2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    option {
+      color: #111;
+      background: #fff;
+    }
+
+    .empty {
+      border: 1px dashed rgba(255,255,255,.25);
+      border-radius: 15px;
+      padding: 18px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      transform: translateX(-50%);
+      background: rgba(28,38,56,.96);
+      color: var(--text);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      border-radius: 999px;
+      padding: 10px 14px;
+      z-index: 20;
+      display: none;
+      max-width: min(92vw, 600px);
+      text-align: center;
+    }
+
+    .toast.show {
+      display: block;
+      animation: toast .2s ease-out;
+    }
+
+    @keyframes toast {
+      from { opacity: 0; transform: translate(-50%, 8px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    @media (max-width: 780px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .top-stats { justify-content: flex-start; }
+      nav { grid-template-columns: repeat(3, 1fr); }
+      .span-8, .span-6, .span-4, .span-3 { grid-column: span 12; }
+      .battle-layout { grid-template-columns: 1fr; }
+      .battle-actions { grid-template-columns: repeat(2, 1fr); }
+      .select-row { grid-template-columns: 1fr; }
+      .log { height: 150px; }
+    }
+
+    @media (max-width: 430px) {
+      .app { padding: 10px; }
+      nav { grid-template-columns: repeat(2, 1fr); }
+      .tab { min-height: 38px; font-size: 13px; }
+      .card { padding: 12px; }
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title">
+        <h1>幻晶モンスターズ MVP</h1>
+        <div class="subtitle">収集・育成・配合・ダンジョン探索のオリジナルRPGプロトタイプ</div>
+      </div>
+      <div class="top-stats" id="topStats"></div>
+    </header>
+
+    <nav id="tabs">
+      <button class="tab active" data-screen="home">ホーム</button>
+      <button class="tab" data-screen="party">パーティ</button>
+      <button class="tab" data-screen="monsters">所持</button>
+      <button class="tab" data-screen="fusion">配合</button>
+      <button class="tab" data-screen="dungeons">ダンジョン</button>
+      <button class="tab" data-screen="codex">図鑑</button>
+      <button class="tab" data-screen="battle">戦闘</button>
+      <button class="tab" data-screen="settings">設定</button>
+    </nav>
+
+    <main>
+      <section id="home" class="screen active"></section>
+      <section id="party" class="screen"></section>
+      <section id="monsters" class="screen"></section>
+      <section id="fusion" class="screen"></section>
+      <section id="dungeons" class="screen"></section>
+      <section id="codex" class="screen"></section>
+      <section id="battle" class="screen"></section>
+      <section id="settings" class="screen"></section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    "use strict";
+
+    const STORAGE_KEY = "crystal_monsters_mvp_v1";
+
+    const skills = {
+      bite: { id: "bite", name: "かみつき", mp: 2, power: 1.35, type: "physical", desc: "敵1体に物理ダメージ" },
+      spark: { id: "spark", name: "小さな雷", mp: 3, power: 1.45, type: "storm", desc: "素早さを少し乗せる雷撃" },
+      leaf: { id: "leaf", name: "若葉の癒し", mp: 4, power: -1.15, type: "heal", desc: "味方1体を回復" },
+      ember: { id: "ember", name: "ほのおだね", mp: 3, power: 1.45, type: "fire", desc: "火属性の魔法攻撃" },
+      aqua: { id: "aqua", name: "水しぶき", mp: 3, power: 1.35, type: "water", desc: "水属性の魔法攻撃" },
+      guard: { id: "guard", name: "まもりの構え", mp: 2, power: 0, type: "buff", desc: "一時的に防御を上げる" },
+      mind: { id: "mind", name: "知恵の光", mp: 5, power: 1.7, type: "magic", desc: "賢さ依存の魔法攻撃" },
+      fangrush: { id: "fangrush", name: "連牙", mp: 5, power: 1.75, type: "physical", desc: "強めの物理攻撃" }
+    };
+
+    const species = {
+      plumo: {
+        id: "plumo", name: "プルモ", category: "ゼリー系", element: "水", rank: "F",
+        base: { hp: 32, mp: 14, atk: 11, def: 10, spd: 12, wis: 9 },
+        growth: { hp: 7, mp: 3, atk: 3, def: 3, spd: 3, wis: 2 },
+        skills: ["bite", "aqua"],
+        scoutRate: 55,
+        desc: "ぷにぷにした水辺の小型モンスター。打たれ弱いが育てやすい。"
+      },
+      kobud: {
+        id: "kobud", name: "コブッド", category: "獣系", element: "地", rank: "F",
+        base: { hp: 38, mp: 8, atk: 15, def: 12, spd: 10, wis: 6 },
+        growth: { hp: 8, mp: 2, atk: 4, def: 3, spd: 2, wis: 1 },
+        skills: ["bite", "fangrush"],
+        scoutRate: 45,
+        desc: "石の角を持つ突進好き。序盤の物理役。"
+      },
+      pyrop: {
+        id: "pyrop", name: "ピロップ", category: "精霊系", element: "火", rank: "E",
+        base: { hp: 30, mp: 20, atk: 8, def: 8, spd: 14, wis: 16 },
+        growth: { hp: 6, mp: 4, atk: 2, def: 2, spd: 3, wis: 4 },
+        skills: ["ember", "mind"],
+        scoutRate: 35,
+        desc: "火花のように跳ねる精霊。魔法攻撃が得意。"
+      },
+      florin: {
+        id: "florin", name: "フロリン", category: "植物系", element: "木", rank: "E",
+        base: { hp: 34, mp: 22, atk: 8, def: 11, spd: 9, wis: 15 },
+        growth: { hp: 7, mp: 5, atk: 2, def: 3, spd: 2, wis: 4 },
+        skills: ["leaf", "guard"],
+        scoutRate: 42,
+        desc: "小さな花冠をかぶった癒し手。長期戦を支える。"
+      },
+      voltwing: {
+        id: "voltwing", name: "ボルトウィング", category: "鳥系", element: "雷", rank: "D",
+        base: { hp: 36, mp: 18, atk: 13, def: 9, spd: 20, wis: 12 },
+        growth: { hp: 6, mp: 3, atk: 3, def: 2, spd: 5, wis: 3 },
+        skills: ["spark", "bite"],
+        scoutRate: 28,
+        desc: "帯電した羽を持つ鳥型モンスター。行動が速い。"
+      },
+      armordo: {
+        id: "armordo", name: "アーマード", category: "甲殻系", element: "鋼", rank: "D",
+        base: { hp: 48, mp: 10, atk: 16, def: 22, spd: 6, wis: 7 },
+        growth: { hp: 9, mp: 2, atk: 4, def: 5, spd: 1, wis: 1 },
+        skills: ["guard", "fangrush"],
+        scoutRate: 24,
+        desc: "硬い外殻を持つ防御役。遅いが崩れにくい。"
+      },
+      lunacat: {
+        id: "lunacat", name: "ルナキャット", category: "獣系", element: "月", rank: "C",
+        base: { hp: 44, mp: 26, atk: 18, def: 13, spd: 23, wis: 18 },
+        growth: { hp: 7, mp: 5, atk: 4, def: 3, spd: 5, wis: 4 },
+        skills: ["spark", "mind", "fangrush"],
+        scoutRate: 14,
+        desc: "月光をまとう俊敏な獣。配合で狙いやすい中盤エース。"
+      },
+      drakid: {
+        id: "drakid", name: "ドラキッド", category: "竜系", element: "火", rank: "C",
+        base: { hp: 52, mp: 18, atk: 22, def: 17, spd: 14, wis: 12 },
+        growth: { hp: 9, mp: 3, atk: 5, def: 4, spd: 3, wis: 2 },
+        skills: ["ember", "fangrush", "guard"],
+        scoutRate: 12,
+        desc: "小型の幻竜。火力と耐久のバランスがよい。"
+      }
+    };
+
+    const categoryFusion = {
+      "ゼリー系+獣系": "kobud",
+      "獣系+ゼリー系": "kobud",
+      "ゼリー系+精霊系": "pyrop",
+      "精霊系+ゼリー系": "pyrop",
+      "植物系+精霊系": "florin",
+      "精霊系+植物系": "florin",
+      "鳥系+精霊系": "voltwing",
+      "精霊系+鳥系": "voltwing",
+      "獣系+鳥系": "lunacat",
+      "鳥系+獣系": "lunacat",
+      "甲殻系+獣系": "armordo",
+      "獣系+甲殻系": "armordo",
+      "火+獣系": "drakid",
+      "獣系+火": "drakid"
+    };
+
+    const dungeons = [
+      {
+        id: "meadow",
+        name: "はじまりの草原",
+        floors: 3,
+        recommended: 1,
+        enemies: ["plumo", "kobud", "florin"],
+        boss: "kobud",
+        reward: { gold: 60, item: "スカウトビスケット" },
+        desc: "勧誘と基本戦闘を覚える浅い草原。"
+      },
+      {
+        id: "embercave",
+        name: "火花の洞穴",
+        floors: 4,
+        recommended: 4,
+        enemies: ["pyrop", "kobud", "armordo"],
+        boss: "pyrop",
+        reward: { gold: 120, item: "癒しの葉" },
+        desc: "魔法系の敵が多い洞穴。防御と回復が鍵。"
+      },
+      {
+        id: "stormtower",
+        name: "雷鳴の塔",
+        floors: 5,
+        recommended: 7,
+        enemies: ["voltwing", "pyrop", "armordo", "lunacat"],
+        boss: "voltwing",
+        reward: { gold: 220, item: "融合石" },
+        desc: "素早い敵が連続で出る中盤ダンジョン。"
+      }
+    ];
+
+    const rankValue = { F: 1, E: 2, D: 3, C: 4, B: 5, A: 6, S: 7 };
+    const rankLabel = Object.fromEntries(Object.entries(rankValue).map(([k, v]) => [v, k]));
+
+    const defaultState = () => ({
+      gold: 120,
+      items: {
+        "スカウトビスケット": 3,
+        "癒しの葉": 2,
+        "融合石": 1
+      },
+      owned: [
+        createMonster("plumo", 1),
+        createMonster("kobud", 1),
+        createMonster("florin", 1)
+      ],
+      partyIds: [],
+      codex: ["plumo", "kobud", "florin"],
+      progress: { cleared: [] },
+      settings: { consumeParents: true },
+      battle: null,
+      selectedDungeonId: null
+    });
+
+    let state = loadState();
+    let fusionParents = { a: null, b: null };
+
+    function uid() {
+      return "m_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+    }
+
+    function clone(obj) {
+      return JSON.parse(JSON.stringify(obj));
+    }
+
+    function statAt(specId, level, bonus = null) {
+      const sp = species[specId];
+      const stats = {};
+      for (const k of Object.keys(sp.base)) {
+        stats[k] = sp.base[k] + sp.growth[k] * (level - 1) + (bonus?.[k] || 0);
+      }
+      return stats;
+    }
+
+    function createMonster(specId, level = 1, options = {}) {
+      const sp = species[specId];
+      const bonus = options.bonus || {};
+      return {
+        uid: uid(),
+        speciesId: specId,
+        nickname: options.nickname || sp.name,
+        level,
+        exp: options.exp || 0,
+        stats: statAt(specId, level, bonus),
+        bonus,
+        currentHp: statAt(specId, level, bonus).hp,
+        currentMp: statAt(specId, level, bonus).mp,
+        skills: unique([...(sp.skills || []), ...(options.extraSkills || [])]).slice(0, 4),
+        parents: options.parents || null
+      };
+    }
+
+    function unique(arr) {
+      return [...new Set(arr)];
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) {
+          const fresh = defaultState();
+          fresh.partyIds = fresh.owned.slice(0, 3).map(m => m.uid);
+          return fresh;
+        }
+        const parsed = JSON.parse(raw);
+        return migrateState(parsed);
+      } catch (e) {
+        console.warn(e);
+        return defaultState();
+      }
+    }
+
+    function migrateState(s) {
+      s.gold ??= 0;
+      s.items ??= {};
+      s.owned ??= [];
+      s.partyIds ??= s.owned.slice(0, 3).map(m => m.uid);
+      s.codex ??= [];
+      s.progress ??= { cleared: [] };
+      s.settings ??= { consumeParents: true };
+      s.battle ??= null;
+      s.selectedDungeonId ??= null;
+      for (const m of s.owned) {
+        const max = maxStats(m);
+        m.currentHp ??= max.hp;
+        m.currentMp ??= max.mp;
+        m.skills ??= species[m.speciesId]?.skills || [];
+      }
+      return s;
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderTopStats();
+    }
+
+    function resetGame() {
+      if (!confirm("セーブデータを初期化します。よろしいですか？")) return;
+      localStorage.removeItem(STORAGE_KEY);
+      state = defaultState();
+      state.partyIds = state.owned.slice(0, 3).map(m => m.uid);
+      fusionParents = { a: null, b: null };
+      showToast("セーブデータを初期化しました");
+      renderAll();
+    }
+
+    function maxStats(mon) {
+      if (!mon) return {};
+      return statAt(mon.speciesId, mon.level, mon.bonus || {});
+    }
+
+    function getOwned(uid) {
+      return state.owned.find(m => m.uid === uid);
+    }
+
+    function party() {
+      return state.partyIds.map(getOwned).filter(Boolean);
+    }
+
+    function aliveParty() {
+      return party().filter(m => m.currentHp > 0);
+    }
+
+    function speciesName(id) {
+      return species[id]?.name || id;
+    }
+
+    function renderTopStats() {
+      const discovered = new Set(state.codex).size;
+      document.getElementById("topStats").innerHTML = `
+        <span class="pill">G ${state.gold}</span>
+        <span class="pill">所持 ${state.owned.length}体</span>
+        <span class="pill">図鑑 ${discovered}/${Object.keys(species).length}</span>
+        <span class="pill">PT ${party().length}/3</span>
+      `;
+    }
+
+    function switchScreen(id) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === id));
+      document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.screen === id));
+      renderScreen(id);
+    }
+
+    document.getElementById("tabs").addEventListener("click", e => {
+      const btn = e.target.closest(".tab");
+      if (!btn) return;
+      switchScreen(btn.dataset.screen);
+    });
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    function rankBadge(rank) {
+      const cls = rankValue[rank] >= 4 ? "gold" : "accent";
+      return `<span class="badge ${cls}">Rank ${rank}</span>`;
+    }
+
+    function monsterCard(mon, options = {}) {
+      const sp = species[mon.speciesId];
+      const max = maxStats(mon);
+      const hpRate = Math.max(0, Math.min(100, Math.round((mon.currentHp / max.hp) * 100)));
+      const selected = options.selected ? " selected" : "";
+      const skillsHtml = mon.skills.map(id => `<span class="badge">${skills[id]?.name || id}</span>`).join("");
+      return `
+        <div class="monster-card${selected}" ${options.data || ""}>
+          <div class="monster-head">
+            <div>
+              <div class="name">${escapeHtml(mon.nickname)}</div>
+              <div class="tiny muted">${sp.category} / ${sp.element} / Lv.${mon.level}</div>
+            </div>
+            <div>${rankBadge(sp.rank)}</div>
+          </div>
+          <div class="hpbar"><div class="hpfill ${hpRate < 35 ? "low" : ""}" style="width:${hpRate}%"></div></div>
+          <div class="tiny muted">HP ${mon.currentHp}/${max.hp}　MP ${mon.currentMp}/${max.mp}</div>
+          <div class="stat-grid">
+            <div>攻撃 ${max.atk}</div><div>防御 ${max.def}</div><div>素早さ ${max.spd}</div>
+            <div>賢さ ${max.wis}</div><div>経験 ${mon.exp}</div><div>ID ${mon.uid.slice(-4)}</div>
+          </div>
+          <div style="margin-top:7px">${skillsHtml}</div>
+          ${options.actions || ""}
+        </div>
+      `;
+    }
+
+    function renderHome() {
+      const section = document.getElementById("home");
+      const pt = party();
+      section.innerHTML = `
+        <div class="grid">
+          <div class="card span-8">
+            <h2>冒険の拠点</h2>
+            <p class="muted">
+              幻晶の力で生まれたモンスターを集め、育て、配合し、ダンジョンを攻略するMVPです。
+              まずは「はじまりの草原」で仲間を増やし、配合で強い個体を作りましょう。
+            </p>
+            <div class="btn-row">
+              <button class="btn primary" onclick="switchScreen('dungeons')">ダンジョンへ</button>
+              <button class="btn" onclick="switchScreen('fusion')">配合する</button>
+              <button class="btn" onclick="healParty()">宿屋で全回復 30G</button>
+            </div>
+          </div>
+          <div class="card span-4">
+            <h3>現在のパーティ</h3>
+            ${pt.length ? pt.map(m => `<div class="mini-card tiny">${escapeHtml(m.nickname)} / ${speciesName(m.speciesId)} Lv.${m.level}</div>`).join("") : `<div class="empty">パーティ未編成</div>`}
+          </div>
+          <div class="card span-4">
+            <h3>次にやること</h3>
+            <p class="tiny muted">1. パーティを3体にする<br>2. ダンジョンで敵を倒す<br>3. 勧誘で仲間を増やす<br>4. 配合プレビューを試す</p>
+          </div>
+          <div class="card span-4">
+            <h3>所持アイテム</h3>
+            ${Object.entries(state.items).map(([name, count]) => `<div class="mini-card tiny">${name} × ${count}</div>`).join("") || `<div class="empty">なし</div>`}
+          </div>
+          <div class="card span-4">
+            <h3>クリア状況</h3>
+            ${dungeons.map(d => `<div class="mini-card tiny">${d.name}: ${state.progress.cleared.includes(d.id) ? "CLEAR" : "未クリア"}</div>`).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    function healParty() {
+      if (state.gold < 30) {
+        showToast("ゴールドが足りません");
+        return;
+      }
+      state.gold -= 30;
+      for (const m of party()) {
+        const max = maxStats(m);
+        m.currentHp = max.hp;
+        m.currentMp = max.mp;
+      }
+      saveState();
+      showToast("パーティが全回復しました");
+      renderAll();
+    }
+
+    function renderParty() {
+      const section = document.getElementById("party");
+      const current = new Set(state.partyIds);
+      section.innerHTML = `
+        <div class="grid">
+          <div class="card span-12">
+            <h2>パーティ編成</h2>
+            <p class="muted tiny">最大3体まで編成できます。戦闘不能の仲間は宿屋かアイテムで回復してください。</p>
+            <div class="btn-row">
+              <button class="btn" onclick="autoParty()">おすすめ編成</button>
+              <button class="btn" onclick="clearParty()">パーティ解除</button>
+            </div>
+          </div>
+          <div class="card span-6">
+            <h3>現在のパーティ</h3>
+            <div class="monster-list">
+              ${party().length ? party().map(m => monsterCard(m, {
+                actions: `<div class="btn-row"><button class="btn danger" onclick="removeFromParty('${m.uid}')">外す</button></div>`
+              })).join("") : `<div class="empty">未編成</div>`}
+            </div>
+          </div>
+          <div class="card span-6">
+            <h3>所持モンスター</h3>
+            <div class="monster-list">
+              ${state.owned.map(m => monsterCard(m, {
+                selected: current.has(m.uid),
+                actions: `<div class="btn-row"><button class="btn primary" onclick="addToParty('${m.uid}')" ${current.has(m.uid) ? "disabled" : ""}>編成</button></div>`
+              })).join("")}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function addToParty(uid) {
+      if (state.partyIds.includes(uid)) return;
+      if (state.partyIds.length >= 3) {
+        showToast("パーティは最大3体です");
+        return;
+      }
+      state.partyIds.push(uid);
+      saveState();
+      renderParty();
+      renderTopStats();
+    }
+
+    function removeFromParty(uid) {
+      state.partyIds = state.partyIds.filter(id => id !== uid);
+      saveState();
+      renderParty();
+      renderTopStats();
+    }
+
+    function clearParty() {
+      state.partyIds = [];
+      saveState();
+      renderParty();
+      renderTopStats();
+    }
+
+    function autoParty() {
+      state.partyIds = [...state.owned]
+        .sort((a, b) => totalPower(b) - totalPower(a))
+        .slice(0, 3)
+        .map(m => m.uid);
+      saveState();
+      showToast("おすすめ編成にしました");
+      renderParty();
+      renderTopStats();
+    }
+
+    function totalPower(mon) {
+      const st = maxStats(mon);
+      return st.hp + st.mp * .7 + st.atk * 2 + st.def * 1.5 + st.spd * 1.3 + st.wis * 1.5 + mon.level * 8;
+    }
+
+    function renderMonsters() {
+      const section = document.getElementById("monsters");
+      section.innerHTML = `
+        <div class="grid">
+          <div class="card span-12">
+            <h2>所持モンスター</h2>
+            <p class="muted tiny">育成・配合素材・パーティ編成用の一覧です。</p>
+          </div>
+          ${state.owned.map(m => `
+            <div class="span-4">${monsterCard(m, {
+              actions: `<div class="btn-row">
+                <button class="btn" onclick="renameMonster('${m.uid}')">名前変更</button>
+                <button class="btn warn" onclick="useHealItem('${m.uid}')">癒しの葉</button>
+              </div>`
+            })}</div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renameMonster(uid) {
+      const mon = getOwned(uid);
+      const name = prompt("新しい名前を入力してください", mon.nickname);
+      if (!name?.trim()) return;
+      mon.nickname = name.trim().slice(0, 12);
+      saveState();
+      renderMonsters();
+      showToast("名前を変更しました");
+    }
+
+    function useHealItem(uid) {
+      if ((state.items["癒しの葉"] || 0) <= 0) {
+        showToast("癒しの葉がありません");
+        return;
+      }
+      const mon = getOwned(uid);
+      const max = maxStats(mon);
+      mon.currentHp = Math.min(max.hp, mon.currentHp + 40);
+      state.items["癒しの葉"]--;
+      saveState();
+      showToast(`${mon.nickname}を回復しました`);
+      renderMonsters();
+    }
+
+    function renderFusion() {
+      const section = document.getElementById("fusion");
+      const options = state.owned.map(m => `<option value="${m.uid}">${escapeHtml(m.nickname)} / ${speciesName(m.speciesId)} Lv.${m.level}</option>`).join("");
+      const parentA = getOwned(fusionParents.a);
+      const parentB = getOwned(fusionParents.b);
+      const preview = parentA && parentB && parentA.uid !== parentB.uid ? previewFusion(parentA, parentB) : null;
+
+      section.innerHTML = `
+        <div class="grid">
+          <div class="card span-12">
+            <h2>配合</h2>
+            <p class="muted tiny">2体の親から新しい子を生成します。スキル・ステータス・属性の一部を継承します。</p>
+            <label class="tiny"><input type="checkbox" ${state.settings.consumeParents ? "checked" : ""} onchange="toggleConsumeParents(this.checked)"> 親を配合後に消費する</label>
+          </div>
+
+          <div class="card span-6">
+            <h3>親を選択</h3>
+            <div class="select-row">
+              <select onchange="fusionParents.a=this.value; renderFusion();">
+                <option value="">親Aを選択</option>
+                ${state.owned.map(m => `<option value="${m.uid}" ${fusionParents.a === m.uid ? "selected" : ""}>${escapeHtml(m.nickname)} / ${speciesName(m.speciesId)} Lv.${m.level}</option>`).join("")}
+              </select>
+              <select onchange="fusionParents.b=this.value; renderFusion();">
+                <option value="">親Bを選択</option>
+                ${state.owned.map(m => `<option value="${m.uid}" ${fusionParents.b === m.uid ? "selected" : ""}>${escapeHtml(m.nickname)} / ${speciesName(m.speciesId)} Lv.${m.level}</option>`).join("")}
+              </select>
+            </div>
+            <div class="monster-list">
+              ${parentA ? monsterCard(parentA) : `<div class="empty">親A未選択</div>`}
+              ${parentB ? monsterCard(parentB) : `<div class="empty">親B未選択</div>`}
+            </div>
+          </div>
+
+          <div class="card span-6">
+            <h3>配合プレビュー</h3>
+            ${preview ? fusionPreviewHtml(preview) : `<div class="empty">異なる2体を選ぶと結果が表示されます</div>`}
+            <div class="btn-row">
+              <button class="btn primary" onclick="executeFusion()" ${preview ? "" : "disabled"}>配合実行</button>
+            </div>
+          </div>
+
+          <div class="card span-12">
+            <h3>配合ルールの例</h3>
+            <p class="tiny muted">
+              獣系＋鳥系 → 月属性の俊敏タイプ / 精霊系＋鳥系 → 雷属性タイプ / 獣系＋火属性 → 竜系タイプ。
+              未定義の組み合わせは、親の平均ランクと属性から近い種族を自動選択します。
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    function toggleConsumeParents(v) {
+      state.settings.consumeParents = v;
+      saveState();
+      renderFusion();
+    }
+
+    function previewFusion(a, b) {
+      const sa = species[a.speciesId];
+      const sb = species[b.speciesId];
+
+      const directKeys = [
+        `${sa.category}+${sb.category}`,
+        `${sa.element}+${sb.category}`,
+        `${sb.element}+${sa.category}`,
+        `${sa.category}+${sb.element}`
+      ];
+
+      let childSpecies = null;
+      for (const key of directKeys) {
+        if (categoryFusion[key]) {
+          childSpecies = categoryFusion[key];
+          break;
+        }
+      }
+      if (!childSpecies) childSpecies = chooseFallbackSpecies(a, b);
+
+      const childSp = species[childSpecies];
+      const childLevel = Math.max(1, Math.floor((a.level + b.level) / 2) - 2);
+      const aStats = maxStats(a);
+      const bStats = maxStats(b);
+      const bonus = {};
+      for (const k of Object.keys(aStats)) {
+        bonus[k] = Math.floor(((aStats[k] + bStats[k]) / 2) * 0.12);
+      }
+
+      const inherited = unique([...a.skills, ...b.skills, ...childSp.skills]).slice(0, 4);
+      const child = createMonster(childSpecies, childLevel, {
+        bonus,
+        extraSkills: inherited,
+        parents: [a.speciesId, b.speciesId]
+      });
+      child.skills = inherited;
+      child.nickname = childSp.name;
+
+      return { child, childSp, bonus, inherited };
+    }
+
+    function chooseFallbackSpecies(a, b) {
+      const sa = species[a.speciesId];
+      const sb = species[b.speciesId];
+      const avgRank = Math.round((rankValue[sa.rank] + rankValue[sb.rank]) / 2);
+      const candidates = Object.values(species)
+        .filter(sp => rankValue[sp.rank] <= avgRank + 1)
+        .sort((x, y) => {
+          const scoreX = (x.element === sa.element || x.element === sb.element ? -2 : 0) + Math.abs(rankValue[x.rank] - avgRank);
+          const scoreY = (y.element === sa.element || y.element === sb.element ? -2 : 0) + Math.abs(rankValue[y.rank] - avgRank);
+          return scoreX - scoreY;
+        });
+      return candidates[0]?.id || "plumo";
+    }
+
+    function fusionPreviewHtml(preview) {
+      const m = preview.child;
+      const sp = species[m.speciesId];
+      const st = maxStats(m);
+      return `
+        <div class="monster-card">
+          <div class="monster-head">
+            <div>
+              <div class="name">${sp.name}</div>
+              <div class="tiny muted">${sp.category} / ${sp.element} / Lv.${m.level}</div>
+            </div>
+            ${rankBadge(sp.rank)}
+          </div>
+          <p class="tiny muted">${sp.desc}</p>
+          <div class="stat-grid">
+            <div>HP ${st.hp}</div><div>MP ${st.mp}</div><div>攻撃 ${st.atk}</div>
+            <div>防御 ${st.def}</div><div>素早さ ${st.spd}</div><div>賢さ ${st.wis}</div>
+          </div>
+          <div style="margin-top:8px">${m.skills.map(id => `<span class="badge">${skills[id]?.name || id}</span>`).join("")}</div>
+          <p class="tiny gold">継承補正: ${Object.entries(preview.bonus).map(([k,v]) => `${jpStat(k)}+${v}`).join(" / ")}</p>
+        </div>
+      `;
+    }
+
+    function executeFusion() {
+      const a = getOwned(fusionParents.a);
+      const b = getOwned(fusionParents.b);
+      if (!a || !b || a.uid === b.uid) {
+        showToast("異なる2体を選んでください");
+        return;
+      }
+      const preview = previewFusion(a, b);
+      const child = preview.child;
+      state.owned.push(child);
+      state.codex = unique([...state.codex, child.speciesId]);
+
+      if (state.settings.consumeParents) {
+        state.owned = state.owned.filter(m => m.uid !== a.uid && m.uid !== b.uid);
+        state.partyIds = state.partyIds.filter(id => id !== a.uid && id !== b.uid);
+      }
+
+      fusionParents = { a: null, b: null };
+      saveState();
+      showToast(`${child.nickname}が誕生しました！`);
+      renderAll();
+      switchScreen("monsters");
+    }
+
+    function jpStat(k) {
+      return ({ hp: "HP", mp: "MP", atk: "攻", def: "防", spd: "速", wis: "賢" })[k] || k;
+    }
+
+    function renderDungeons() {
+      const section = document.getElementById("dungeons");
+      section.innerHTML = `
+        <div class="grid">
+          <div class="card span-12">
+            <h2>ダンジョン選択</h2>
+            <p class="muted tiny">探索すると、各階層で敵・宝箱・回復・ボス戦が発生します。</p>
+          </div>
+          ${dungeons.map(d => `
+            <div class="card span-4">
+              <h3>${d.name}</h3>
+              <p class="tiny muted">${d.desc}</p>
+              <div class="badge">階層 ${d.floors}</div>
+              <div class="badge">推奨Lv ${d.recommended}</div>
+              <div class="badge">${state.progress.cleared.includes(d.id) ? "CLEAR" : "未クリア"}</div>
+              <p class="tiny">出現: ${d.enemies.map(speciesName).join(" / ")}</p>
+              <div class="btn-row">
+                <button class="btn primary" onclick="startDungeon('${d.id}')">探索開始</button>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function startDungeon(id) {
+      if (party().length === 0) {
+        showToast("パーティを編成してください");
+        switchScreen("party");
+        return;
+      }
+      if (aliveParty().length === 0) {
+        showToast("戦える仲間がいません。宿屋で回復してください");
+        return;
+      }
+
+      const d = dungeons.find(x => x.id === id);
+      state.selectedDungeonId = id;
+      const floor = 1;
+      const encounter = generateEncounter(d, floor, false);
+      state.battle = {
+        dungeonId: id,
+        floor,
+        maxFloor: d.floors,
+        enemies: encounter,
+        log: [`${d.name} に入った！`, `第${floor}層でモンスターと遭遇！`],
+        status: "battle",
+        reward: { exp: 0, gold: 0 },
+        canScout: true
+      };
+      saveState();
+      switchScreen("battle");
+    }
+
+    function generateEncounter(dungeon, floor, boss = false) {
+      const count = boss ? 1 : Math.min(3, 1 + Math.floor(Math.random() * Math.min(3, floor + 1)));
+      const ids = boss ? [dungeon.boss] : Array.from({ length: count }, () => randomPick(dungeon.enemies));
+      return ids.map(id => {
+        const lv = Math.max(1, dungeon.recommended + floor - 1 + Math.floor(Math.random() * 2));
+        const m = createMonster(id, lv);
+        m.enemyId = uid();
+        return m;
+      });
+    }
+
+    function randomPick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function renderBattle() {
+      const section = document.getElementById("battle");
+      const b = state.battle;
+      if (!b) {
+        section.innerHTML = `
+          <div class="card">
+            <h2>戦闘</h2>
+            <div class="empty">現在戦闘中ではありません</div>
+            <div class="btn-row"><button class="btn primary" onclick="switchScreen('dungeons')">ダンジョンへ</button></div>
+          </div>
+        `;
+        return;
+      }
+
+      const dungeon = dungeons.find(d => d.id === b.dungeonId);
+      const activeAlly = aliveParty()[0];
+      const activeEnemy = b.enemies.find(e => e.currentHp > 0);
+      const actionDisabled = b.status !== "battle" || !activeAlly || !activeEnemy;
+
+      section.innerHTML = `
+        <div class="grid">
+          <div class="card span-12">
+            <div class="monster-head">
+              <div>
+                <h2>${dungeon?.name || "ダンジョン"} / 第${b.floor}層</h2>
+                <div class="tiny muted">先頭: ${activeAlly ? activeAlly.nickname : "なし"} / 敵: ${activeEnemy ? activeEnemy.nickname : "なし"}</div>
+              </div>
+              <div class="badge">${b.status}</div>
+            </div>
+          </div>
+
+          <div class="card span-8">
+            <div class="battle-layout">
+              <div class="battle-side">
+                <h3>味方</h3>
+                ${party().map(m => monsterCard(m)).join("")}
+              </div>
+              <div class="battle-side">
+                <h3>敵</h3>
+                ${b.enemies.map(m => monsterCard(m)).join("")}
+              </div>
+            </div>
+
+            <div class="battle-actions">
+              <button class="btn primary" onclick="playerAttack()" ${actionDisabled ? "disabled" : ""}>通常攻撃</button>
+              <button class="btn" onclick="playerSkill()" ${actionDisabled ? "disabled" : ""}>スキル</button>
+              <button class="btn warn" onclick="playerScout()" ${actionDisabled ? "disabled" : ""}>勧誘</button>
+              <button class="btn danger" onclick="escapeBattle()" ${b.status !== "battle" ? "disabled" : ""}>逃げる</button>
+            </div>
+
+            ${b.status === "floorClear" ? `<div class="btn-row"><button class="btn primary" onclick="nextFloor()">次の階層へ</button></div>` : ""}
+            ${b.status === "dungeonClear" ? `<div class="btn-row"><button class="btn primary" onclick="finishDungeon()">報酬を受け取る</button></div>` : ""}
+            ${b.status === "lose" ? `<div class="btn-row"><button class="btn primary" onclick="finishLose()">拠点に戻る</button></div>` : ""}
+          </div>
+
+          <div class="card span-4">
+            <h3>ログ</h3>
+            <div class="log">${b.log.slice(-30).map(x => `<p>${escapeHtml(x)}</p>`).join("")}</div>
+          </div>
+        </div>
+      `;
+      const log = section.querySelector(".log");
+      if (log) log.scrollTop = log.scrollHeight;
+    }
+
+    function addLog(text) {
+      state.battle.log.push(text);
+      if (state.battle.log.length > 80) state.battle.log.shift();
+    }
+
+    function playerAttack() {
+      const ally = aliveParty()[0];
+      const enemy = state.battle.enemies.find(e => e.currentHp > 0);
+      if (!ally || !enemy) return;
+      dealDamage(ally, enemy, 1.0, "通常攻撃");
+      postPlayerAction();
+    }
+
+    function playerSkill() {
+      const ally = aliveParty()[0];
+      const enemy = state.battle.enemies.find(e => e.currentHp > 0);
+      if (!ally || !enemy) return;
+
+      const usable = ally.skills.filter(id => (skills[id]?.mp || 0) <= ally.currentMp);
+      if (!usable.length) {
+        addLog(`${ally.nickname}はMPが足りない！`);
+        saveState();
+        renderBattle();
+        return;
+      }
+
+      const skillId = usable[0];
+      const sk = skills[skillId];
+      ally.currentMp -= sk.mp;
+
+      if (sk.type === "heal") {
+        const target = party().filter(m => m.currentHp > 0).sort((a, b) => (a.currentHp / maxStats(a).hp) - (b.currentHp / maxStats(b).hp))[0] || ally;
+        const amount = Math.max(12, Math.floor(maxStats(ally).wis * Math.abs(sk.power)));
+        const max = maxStats(target);
+        target.currentHp = Math.min(max.hp, target.currentHp + amount);
+        addLog(`${ally.nickname}は${sk.name}を使い、${target.nickname}を${amount}回復した！`);
+      } else if (sk.type === "buff") {
+        ally.tempDef = (ally.tempDef || 0) + 5;
+        addLog(`${ally.nickname}は${sk.name}で身を固めた！`);
+      } else {
+        dealDamage(ally, enemy, sk.power, sk.name, sk);
+      }
+      postPlayerAction();
+    }
+
+    function dealDamage(attacker, defender, multiplier, label, skill = null) {
+      const a = maxStats(attacker);
+      const d = maxStats(defender);
+      const atkBase = skill && ["magic", "fire", "water", "storm"].includes(skill.type)
+        ? a.wis * 1.25
+        : a.atk;
+      const defBase = d.def + (defender.tempDef || 0);
+      const variance = 0.88 + Math.random() * 0.24;
+      const raw = Math.max(3, Math.floor((atkBase * multiplier - defBase * 0.45 + attacker.level * 2) * variance));
+      defender.currentHp = Math.max(0, defender.currentHp - raw);
+      addLog(`${attacker.nickname}の${label}！ ${defender.nickname}に${raw}ダメージ。`);
+      if (defender.currentHp <= 0) {
+        addLog(`${defender.nickname}を倒した！`);
+      }
+    }
+
+    function postPlayerAction() {
+      if (checkBattleEnd()) {
+        saveState();
+        renderBattle();
+        return;
+      }
+      enemyTurn();
+      checkBattleEnd();
+      saveState();
+      renderBattle();
+    }
+
+    function enemyTurn() {
+      const enemies = state.battle.enemies.filter(e => e.currentHp > 0);
+      for (const enemy of enemies) {
+        const targets = aliveParty();
+        if (!targets.length) break;
+        const target = randomPick(targets);
+        const sk = skills[randomPick(enemy.skills)] || null;
+        if (sk && sk.mp <= enemy.currentMp && sk.type !== "heal" && sk.type !== "buff") {
+          enemy.currentMp -= sk.mp;
+          dealDamage(enemy, target, sk.power * .88, sk.name, sk);
+        } else {
+          dealDamage(enemy, target, .82, "攻撃");
+        }
+      }
+    }
+
+    function checkBattleEnd() {
+      const b = state.battle;
+      if (!aliveParty().length) {
+        addLog("味方が全滅した……");
+        b.status = "lose";
+        return true;
+      }
+
+      const enemiesAlive = b.enemies.some(e => e.currentHp > 0);
+      if (!enemiesAlive) {
+        const exp = b.enemies.reduce((sum, e) => sum + 12 + e.level * 5 + rankValue[species[e.speciesId].rank] * 4, 0);
+        const gold = b.enemies.reduce((sum, e) => sum + 8 + e.level * 3, 0);
+        b.reward.exp += exp;
+        b.reward.gold += gold;
+        addLog(`勝利！ 経験値${exp} / ${gold}Gを獲得予定。`);
+        gainExp(exp);
+        const dungeon = dungeons.find(d => d.id === b.dungeonId);
+        if (b.floor >= b.maxFloor) {
+          b.status = "dungeonClear";
+          addLog(`${dungeon.name}を踏破した！`);
+        } else {
+          b.status = "floorClear";
+        }
+        return true;
+      }
+      return false;
+    }
+
+    function gainExp(exp) {
+      for (const m of aliveParty()) {
+        m.exp += exp;
+        while (m.exp >= expToNext(m.level)) {
+          m.exp -= expToNext(m.level);
+          levelUp(m);
+        }
+      }
+    }
+
+    function expToNext(level) {
+      return 30 + level * 18;
+    }
+
+    function levelUp(mon) {
+      mon.level += 1;
+      const oldMax = maxStats(mon);
+      mon.stats = maxStats(mon);
+      const newMax = maxStats(mon);
+      mon.currentHp = newMax.hp;
+      mon.currentMp = newMax.mp;
+      addLog(`${mon.nickname}はLv.${mon.level}になった！`);
+    }
+
+    function playerScout() {
+      const enemy = state.battle.enemies.find(e => e.currentHp > 0);
+      const ally = aliveParty()[0];
+      if (!enemy || !ally) return;
+
+      const itemBonus = (state.items["スカウトビスケット"] || 0) > 0 ? 20 : 0;
+      let usedItem = false;
+      if (itemBonus && confirm("スカウトビスケットを使って勧誘率を上げますか？")) {
+        state.items["スカウトビスケット"]--;
+        usedItem = true;
+      }
+
+      const sp = species[enemy.speciesId];
+      const max = maxStats(enemy);
+      const hpFactor = Math.round((1 - enemy.currentHp / max.hp) * 35);
+      const rankPenalty = rankValue[sp.rank] * 5;
+      const levelBonus = Math.max(0, ally.level - enemy.level) * 2;
+      const rate = Math.max(5, Math.min(85, sp.scoutRate + hpFactor + itemBonus + levelBonus - rankPenalty));
+      const roll = Math.random() * 100;
+
+      addLog(`${enemy.nickname}を勧誘！ 成功率${rate}%${usedItem ? "（ビスケット使用）" : ""}`);
+      if (roll < rate) {
+        const newMon = createMonster(enemy.speciesId, Math.max(1, enemy.level - 1));
+        state.owned.push(newMon);
+        state.codex = unique([...state.codex, enemy.speciesId]);
+        enemy.currentHp = 0;
+        addLog(`${enemy.nickname}が仲間になった！`);
+      } else {
+        addLog(`${enemy.nickname}は警戒している……`);
+      }
+      postPlayerAction();
+    }
+
+    function escapeBattle() {
+      const ok = Math.random() < 0.72;
+      if (ok) {
+        addLog("うまく逃げ切った！");
+        state.battle = null;
+        saveState();
+        showToast("拠点に戻りました");
+        switchScreen("home");
+      } else {
+        addLog("逃げられなかった！");
+        enemyTurn();
+        checkBattleEnd();
+        saveState();
+        renderBattle();
+      }
+    }
+
+    function nextFloor() {
+      const b = state.battle;
+      const dungeon = dungeons.find(d => d.id === b.dungeonId);
+      b.floor += 1;
+      b.status = "battle";
+
+      const eventRoll = Math.random();
+      if (eventRoll < .18) {
+        const gold = 20 + b.floor * 15;
+        b.reward.gold += gold;
+        addLog(`宝箱を発見！ ${gold}Gを入手予定。`);
+      } else if (eventRoll < .30) {
+        for (const m of party()) {
+          if (m.currentHp > 0) {
+            const max = maxStats(m);
+            m.currentHp = Math.min(max.hp, m.currentHp + 25);
+            m.currentMp = Math.min(max.mp, m.currentMp + 8);
+          }
+        }
+        addLog("澄んだ泉で少し回復した。");
+      } else {
+        addLog("通路を慎重に進んだ。");
+      }
+
+      const boss = b.floor >= b.maxFloor;
+      b.enemies = generateEncounter(dungeon, b.floor, boss);
+      b.canScout = true;
+      addLog(boss ? "ボスの気配がする！" : `第${b.floor}層で敵と遭遇！`);
+      saveState();
+      renderBattle();
+    }
+
+    function finishDungeon() {
+      const b = state.battle;
+      const dungeon = dungeons.find(d => d.id === b.dungeonId);
+      state.gold += b.reward.gold + dungeon.reward.gold;
+      state.items[dungeon.reward.item] = (state.items[dungeon.reward.item] || 0) + 1;
+      state.progress.cleared = unique([...state.progress.cleared, dungeon.id]);
+      addCodexFromDungeon(dungeon);
+      state.battle = null;
+      saveState();
+      showToast(`${dungeon.name}クリア！ 報酬を獲得しました`);
+      renderAll();
+      switchScreen("home");
+    }
+
+    function finishLose() {
+      for (const m of party()) {
+        const max = maxStats(m);
+        m.currentHp = Math.max(1, Math.floor(max.hp * .35));
+        m.currentMp = Math.max(0, Math.floor(max.mp * .25));
+      }
+      state.gold = Math.max(0, state.gold - 20);
+      state.battle = null;
+      saveState();
+      showToast("拠点に戻りました。少し回復しています");
+      renderAll();
+      switchScreen("home");
+    }
+
+    function addCodexFromDungeon(dungeon) {
+      state.codex = unique([...state.codex, ...dungeon.enemies, dungeon.boss]);
+    }
+
+    function renderCodex() {
+      const section = document.getElementById("codex");
+      const discovered = new Set(state.codex);
+      section.innerHTML = `
+        <div class="grid">
+          <div class="card span-12">
+            <h2>図鑑</h2>
+            <p class="muted tiny">遭遇・勧誘・配合で登録されます。</p>
+          </div>
+          ${Object.values(species).map(sp => `
+            <div class="card span-4">
+              ${discovered.has(sp.id) ? `
+                <div class="monster-head">
+                  <div>
+                    <h3>${sp.name}</h3>
+                    <div class="tiny muted">${sp.category} / ${sp.element}</div>
+                  </div>
+                  ${rankBadge(sp.rank)}
+                </div>
+                <p class="tiny muted">${sp.desc}</p>
+                <div class="stat-grid">
+                  <div>HP ${sp.base.hp}</div><div>MP ${sp.base.mp}</div><div>攻撃 ${sp.base.atk}</div>
+                  <div>防御 ${sp.base.def}</div><div>素早さ ${sp.base.spd}</div><div>賢さ ${sp.base.wis}</div>
+                </div>
+                <div style="margin-top:8px">${sp.skills.map(id => `<span class="badge">${skills[id]?.name || id}</span>`).join("")}</div>
+              ` : `
+                <h3>？？？？</h3>
+                <p class="tiny muted">まだ発見していません。</p>
+                <span class="badge">未登録</span>
+              `}
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderSettings() {
+      const section = document.getElementById("settings");
+      section.innerHTML = `
+        <div class="grid">
+          <div class="card span-6">
+            <h2>セーブ</h2>
+            <p class="muted tiny">localStorageに自動保存されます。</p>
+            <div class="btn-row">
+              <button class="btn primary" onclick="saveState(); showToast('保存しました')">手動保存</button>
+              <button class="btn danger" onclick="resetGame()">初期化</button>
+            </div>
+          </div>
+          <div class="card span-6">
+            <h2>開発メモ</h2>
+            <p class="tiny muted">
+              実装済み: モンスターデータ / パーティ / 戦闘 / 勧誘 / 配合プレビュー・実行 / ダンジョン / 図鑑 / localStorage保存。<br>
+              次の改善候補: 装備、スキル選択UI、敵AI、配合レシピ増加、問題出題システムとの統合。
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderScreen(id) {
+      const map = {
+        home: renderHome,
+        party: renderParty,
+        monsters: renderMonsters,
+        fusion: renderFusion,
+        dungeons: renderDungeons,
+        codex: renderCodex,
+        battle: renderBattle,
+        settings: renderSettings
+      };
+      map[id]?.();
+      renderTopStats();
+    }
+
+    function renderAll() {
+      renderTopStats();
+      const active = document.querySelector(".screen.active")?.id || "home";
+      renderScreen(active);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    window.switchScreen = switchScreen;
+    window.healParty = healParty;
+    window.addToParty = addToParty;
+    window.removeFromParty = removeFromParty;
+    window.clearParty = clearParty;
+    window.autoParty = autoParty;
+    window.renameMonster = renameMonster;
+    window.useHealItem = useHealItem;
+    window.fusionParents = fusionParents;
+    window.renderFusion = renderFusion;
+    window.toggleConsumeParents = toggleConsumeParents;
+    window.executeFusion = executeFusion;
+    window.startDungeon = startDungeon;
+    window.playerAttack = playerAttack;
+    window.playerSkill = playerSkill;
+    window.playerScout = playerScout;
+    window.escapeBattle = escapeBattle;
+    window.nextFloor = nextFloor;
+    window.finishDungeon = finishDungeon;
+    window.finishLose = finishLose;
+    window.resetGame = resetGame;
+    window.saveState = saveState;
+    window.showToast = showToast;
+
+    renderAll();
+  </script>
+</body>
+</html>

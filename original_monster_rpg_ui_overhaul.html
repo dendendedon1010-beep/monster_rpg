@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>幻晶モンスターズ UI改修版</title>
+  <style>
+    :root {
+      --bg1:#78d8ff;
+      --bg2:#0c6da4;
+      --sky:#92deff;
+      --sea:#34bce4;
+      --leaf:#54b45d;
+      --leaf2:#3b8d45;
+      --sand:#f4e4a8;
+      --wood:#7a4d2a;
+      --wood2:#5d381c;
+      --gold:#f8d56a;
+      --line:rgba(255,255,255,.22);
+      --white:#fffef9;
+      --shadow:0 10px 22px rgba(0,0,0,.24);
+      --shadow-deep:0 18px 30px rgba(0,0,0,.33);
+      --danger:#ff7a7a;
+      --good:#94f1a6;
+      --panel:#14324e;
+      --panel2:#1b4567;
+      --text-shadow:0 2px 0 rgba(0,0,0,.55), 0 0 8px rgba(0,0,0,.18);
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    html,body{height:100%;}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color:var(--white);
+      background:
+        radial-gradient(circle at 50% 15%, rgba(255,255,255,.28), transparent 26%),
+        linear-gradient(180deg, #79d5ff 0%, #48b8e5 34%, #2f94c0 70%, #146186 100%);
+      overflow-x:hidden;
+    }
+    button,select{font:inherit;}
+    .app-wrap{min-height:100%;display:flex;justify-content:center;align-items:flex-start;padding:10px;}
+    .device{
+      width:min(100%, 430px);
+      min-height:calc(100vh - 20px);
+      background:linear-gradient(180deg, rgba(255,255,255,.18), rgba(255,255,255,.06));
+      border:4px solid rgba(255,255,255,.55);
+      border-radius:34px;
+      overflow:hidden;
+      position:relative;
+      box-shadow:0 24px 70px rgba(0,0,0,.35);
+      backdrop-filter: blur(8px);
+    }
+    .device::before{
+      content:"";
+      position:absolute;left:0;right:0;top:0;height:84px;
+      background:
+        radial-gradient(circle at 20px 24px, var(--leaf) 0 10px, transparent 11px),
+        radial-gradient(circle at 60px 18px, var(--leaf2) 0 14px, transparent 15px),
+        radial-gradient(circle at 110px 22px, var(--leaf) 0 12px, transparent 13px),
+        radial-gradient(circle at 180px 16px, var(--leaf2) 0 14px, transparent 15px),
+        radial-gradient(circle at 250px 18px, var(--leaf) 0 12px, transparent 13px),
+        radial-gradient(circle at 320px 22px, var(--leaf2) 0 14px, transparent 15px),
+        radial-gradient(circle at 390px 16px, var(--leaf) 0 12px, transparent 13px);
+      pointer-events:none;
+      opacity:.95;
+      z-index:0;
+    }
+    .device::after{
+      content:"";
+      position:absolute;left:0;right:0;bottom:0;height:72px;
+      background:
+        linear-gradient(180deg, transparent 0%, rgba(255,255,255,.0) 16%, rgba(255,255,255,.1) 16%, rgba(255,255,255,.1) 24%, transparent 24%),
+        linear-gradient(180deg, rgba(255,243,214,.2), rgba(255,243,214,.06));
+      pointer-events:none;
+      z-index:0;
+    }
+    .view{display:none;position:relative;z-index:1;min-height:calc(100vh - 28px);padding:18px 16px 22px;}
+    .view.active{display:block;animation:fade .2s ease-out;}
+    @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .sr{position:absolute;left:-9999px;}
+    .text-outline{text-shadow:var(--text-shadow);}
+    .mini-outline{ text-shadow: 0 1px 0 rgba(0,0,0,.55), 0 0 6px rgba(0,0,0,.15); }
+
+    .small-btn,.icon-btn,.action-btn,.tab-btn,.wood-btn,.command-btn,.wide-btn{
+      border:none;color:var(--white);cursor:pointer;
+      text-shadow:var(--text-shadow);font-weight:800;letter-spacing:.02em;
+    }
+    .small-btn:disabled,.icon-btn:disabled,.action-btn:disabled,.command-btn:disabled,.wide-btn:disabled{opacity:.55;cursor:not-allowed}
+    .small-btn,.wood-btn,.action-btn,.wide-btn{
+      background:linear-gradient(180deg, #c88449 0%, #9d6030 100%);
+      border:2px solid #5f3217;box-shadow: inset 0 2px 0 rgba(255,255,255,.25), 0 4px 0 rgba(79,40,20,.8), var(--shadow);
+      border-radius:16px;
+    }
+    .small-btn{padding:10px 12px;font-size:12px;min-height:42px;}
+    .wide-btn{padding:14px 18px;font-size:18px;min-height:54px; width:100%;}
+    .wood-btn{padding:12px 14px;font-size:15px;min-height:48px;}
+    .action-btn{
+      padding:14px 12px;font-size:16px;min-height:54px;
+      background:linear-gradient(180deg, #4fd8ff 0%, #1f8fd2 100%);
+      border-color:#0d4f7a;box-shadow: inset 0 2px 0 rgba(255,255,255,.28), 0 4px 0 rgba(8,59,95,.82), var(--shadow);
+    }
+    .command-btn{
+      min-height:60px;padding:10px;border-radius:18px;
+      background:linear-gradient(180deg, #cbefff 0%, #76c5ff 100%);
+      color:#fff;border:2px solid #2d7ab8;box-shadow: inset 0 2px 0 rgba(255,255,255,.5), 0 4px 0 rgba(27,83,125,.8), var(--shadow);
+      font-size:18px;
+    }
+    .command-btn.alt{
+      background:linear-gradient(180deg, #d8fff0 0%, #67d4bf 100%);
+      border-color:#2d8a84;
+      box-shadow: inset 0 2px 0 rgba(255,255,255,.5), 0 4px 0 rgba(28,104,92,.8), var(--shadow);
+    }
+    .command-btn.warn{
+      background:linear-gradient(180deg, #fff2c7 0%, #f8c667 100%);
+      border-color:#bb7e28;
+      box-shadow: inset 0 2px 0 rgba(255,255,255,.45), 0 4px 0 rgba(138,93,28,.8), var(--shadow);
+    }
+    .command-btn.danger{
+      background:linear-gradient(180deg, #ffd2d2 0%, #ff9f9f 100%);
+      border-color:#c55b5b;
+      box-shadow: inset 0 2px 0 rgba(255,255,255,.45), 0 4px 0 rgba(125,53,53,.8), var(--shadow);
+    }
+
+    .glass{
+      background:linear-gradient(180deg, rgba(255,255,255,.26), rgba(255,255,255,.1));
+      border:2px solid rgba(255,255,255,.45);
+      border-radius:20px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+    .wood-panel{
+      background:linear-gradient(180deg, rgba(121,78,42,.97), rgba(79,46,22,.98));
+      border:3px solid #e4be77;
+      border-radius:22px;
+      box-shadow: inset 0 2px 0 rgba(255,255,255,.18), var(--shadow-deep);
+      position:relative;
+      overflow:hidden;
+    }
+    .wood-panel::before{
+      content:"";position:absolute;inset:0;
+      background:repeating-linear-gradient(180deg, rgba(255,255,255,.03) 0 6px, rgba(0,0,0,.02) 6px 12px);
+      pointer-events:none;
+      opacity:.45;
+    }
+    .panel-inner{position:relative;z-index:1;padding:14px;}
+    .top-pills{display:flex;gap:8px;flex-wrap:wrap;}
+    .pill{
+      padding:6px 10px;border-radius:999px;background:rgba(20,50,78,.72);border:2px solid rgba(255,255,255,.32);
+      font-size:12px;font-weight:800;box-shadow:var(--shadow);
+    }
+    .panel-title{font-size:18px;font-weight:900;margin:0 0 8px;text-shadow:var(--text-shadow);}
+    .muted{color:rgba(255,255,255,.88);opacity:.92}
+    .tiny{font-size:12px;}
+
+    /* title */
+    .title-stage{min-height:calc(100vh - 28px);display:flex;flex-direction:column;justify-content:space-between;}
+    .title-hero{
+      margin-top:46px;
+      min-height:420px;position:relative;
+      background:
+        radial-gradient(circle at 50% 28%, rgba(255,255,255,.34), transparent 18%),
+        linear-gradient(180deg, rgba(156,231,255,.96) 0%, rgba(104,198,241,.95) 42%, rgba(68,191,217,.9) 63%, rgba(86,186,125,.85) 64%, rgba(40,126,69,.9) 84%, rgba(26,96,52,.92) 100%);
+      border-radius:28px;
+      border:4px solid rgba(255,255,255,.58);
+      box-shadow:var(--shadow-deep);
+      overflow:hidden;
+    }
+    .title-hero::before{
+      content:"";position:absolute;left:-6%;right:-6%;bottom:24%;height:18%;
+      background:radial-gradient(circle at 15% 40%, #5cae5d 0 48%, transparent 49%),
+                 radial-gradient(circle at 33% 62%, #60b967 0 40%, transparent 41%),
+                 radial-gradient(circle at 52% 42%, #76c169 0 46%, transparent 47%),
+                 radial-gradient(circle at 68% 60%, #5aa65d 0 41%, transparent 42%),
+                 radial-gradient(circle at 87% 44%, #6dc36d 0 44%, transparent 45%);
+      opacity:.95;
+    }
+    .title-hero::after{
+      content:"";position:absolute;left:0;right:0;bottom:0;height:32%;
+      background:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(13,65,83,.12) 22%, rgba(38,129,138,.5) 36%, rgba(58,168,204,.72) 100%);
+    }
+    .palm,.palm.right{position:absolute;top:36px;width:150px;height:220px;pointer-events:none;}
+    .palm{left:-10px;}.palm.right{right:-8px;transform:scaleX(-1);}
+    .palm .trunk{position:absolute;left:56px;top:56px;width:22px;height:150px;background:linear-gradient(180deg,#b07e4d,#7b4b26);border-radius:20px;transform:rotate(-8deg);box-shadow:var(--shadow)}
+    .palm .leaf{position:absolute;top:0;left:18px;width:120px;height:22px;background:linear-gradient(90deg,#9cde58,#3e9d3f);border-radius:22px 6px 22px 6px;transform-origin:10px 10px;box-shadow:var(--shadow)}
+    .palm .leaf:nth-child(1){transform:rotate(-38deg)}
+    .palm .leaf:nth-child(2){transform:rotate(-12deg);top:18px;left:14px}
+    .palm .leaf:nth-child(3){transform:rotate(12deg);top:34px;left:18px}
+    .palm .leaf:nth-child(4){transform:rotate(36deg);top:48px;left:24px}
+    .title-logo{position:absolute;left:18px;right:18px;top:84px;text-align:center;z-index:2;}
+    .title-logo .logo-top{font-size:17px;font-weight:900;letter-spacing:.16em;color:#f8ffe3;text-shadow:var(--text-shadow)}
+    .title-logo .logo-main{font-size:42px;line-height:1.02;margin-top:4px;font-weight:1000;color:#fff9d5;text-shadow:0 3px 0 #1d5179, 0 0 16px rgba(41,86,132,.35), 0 10px 25px rgba(0,0,0,.25)}
+    .title-logo .logo-sub{font-size:16px;margin-top:10px;color:#fffef8;text-shadow:var(--text-shadow)}
+    .mascot{
+      position:absolute;left:22px;bottom:114px;width:108px;height:108px;border-radius:50%;
+      background:radial-gradient(circle at 40% 30%, #fff7dc 0 24%, #ffd9a8 25% 43%, #f5aacd 44% 100%);
+      border:4px solid rgba(255,255,255,.52);box-shadow:var(--shadow-deep);z-index:2;
+    }
+    .mascot::before,.mascot::after{content:"";position:absolute;background:#834070;border-radius:50%;}
+    .mascot::before{width:16px;height:16px;left:28px;top:38px;box-shadow:34px 0 0 #834070;}
+    .mascot::after{width:56px;height:28px;left:26px;top:56px;border-radius:0 0 30px 30px;background:#a55485;}
+    .mascot .ear{position:absolute;top:18px;width:18px;height:26px;background:#c25ea3;border-radius:50% 50% 0 50%;}
+    .mascot .ear.left{left:4px;transform:rotate(-28deg)}
+    .mascot .ear.right{right:4px;transform:rotate(28deg) scaleX(-1)}
+    .mascot .foot{position:absolute;bottom:-6px;width:24px;height:20px;background:#c764a8;border-radius:50%;}
+    .mascot .foot.left{left:18px}.mascot .foot.right{right:18px}
+    .island-shrine{position:absolute;right:26px;bottom:94px;width:128px;height:120px;z-index:2;}
+    .island-shrine::before{content:"";position:absolute;left:20px;right:20px;bottom:0;height:16px;background:#3f9d54;border-radius:999px;}
+    .island-shrine .tower{position:absolute;left:42px;bottom:14px;width:44px;height:76px;background:linear-gradient(180deg,#deecd5,#9fc78d);border:4px solid #d1b05e;border-bottom-width:6px;border-radius:10px 10px 6px 6px;}
+    .island-shrine .roof{position:absolute;left:30px;bottom:82px;width:68px;height:22px;background:linear-gradient(180deg,#7ad3f1,#4ba9d7);clip-path:polygon(0 100%,50% 0,100% 100%);border-radius:12px;}
+    .tap-panel{margin:14px 8px 0;text-align:center;}
+    .tap-text{font-size:32px;font-weight:1000;margin:4px 0 14px;color:#d8fbff;text-shadow:0 3px 0 #1b6b8a, 0 0 16px rgba(0,0,0,.2)}
+    .title-bottom{padding-bottom:20px;}
+    .small-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
+
+    /* generic top bar */
+    .frame-top{
+      margin-top:28px;display:flex;justify-content:space-between;align-items:center;gap:8px;
+    }
+    .status-bubble{display:flex;gap:8px;align-items:center;}
+    .clock-badge,.battery-badge,.slime-badge{
+      padding:8px 12px;border-radius:18px;background:rgba(12,45,70,.82);border:2px solid rgba(255,255,255,.48);
+      font-weight:900;font-size:12px;box-shadow:var(--shadow);text-shadow:var(--text-shadow)
+    }
+    .slime-badge{border-radius:18px 18px 18px 8px;}
+
+    /* field */
+    .field-layout{display:grid;gap:12px;padding-bottom:22px;}
+    .field-scene{
+      height:220px;border-radius:26px;position:relative;overflow:hidden;border:4px solid rgba(255,255,255,.55);box-shadow:var(--shadow-deep);
+      background:
+        radial-gradient(circle at 70% 18%, rgba(255,255,255,.28), transparent 20%),
+        linear-gradient(180deg, #8adbff 0%, #75d2ff 34%, #47b4de 58%, #37c5d7 58%, #31a0c8 68%, #96d56c 69%, #68b657 82%, #5ca34c 100%);
+    }
+    .field-scene::before{content:"";position:absolute;left:-8%;right:-8%;bottom:76px;height:70px;background:radial-gradient(circle at 8% 40%, #f4ecbc 0 17%, transparent 18%), radial-gradient(circle at 34% 48%, #efe4af 0 22%, transparent 23%), radial-gradient(circle at 72% 56%, #efd79f 0 19%, transparent 20%), radial-gradient(circle at 92% 46%, #efdfb2 0 21%, transparent 22%);opacity:.95}
+    .field-scene .water{position:absolute;right:-4%;bottom:28px;width:58%;height:110px;background:linear-gradient(180deg, rgba(157,243,255,.6), rgba(35,161,218,.92));border-radius:55% 0 0 0 / 75% 0 0 0;box-shadow:inset 0 8px 12px rgba(255,255,255,.24)}
+    .field-scene .path{position:absolute;left:-6px;bottom:26px;width:58%;height:90px;background:linear-gradient(180deg,#f8efc1,#eddd9e);clip-path:polygon(0 100%,0 54%,18% 42%,28% 26%,40% 14%,57% 22%,72% 44%,84% 68%,100% 92%,100% 100%)}
+    .field-scene .walker{position:absolute;left:142px;bottom:68px;width:28px;height:48px;background:linear-gradient(180deg,#3171d4 0 34%, #f4bd67 34% 68%, #5b7c2d 68% 100%);border-radius:16px 16px 10px 10px;box-shadow:var(--shadow)}
+    .field-scene .walker::before{content:"";position:absolute;left:4px;top:-11px;width:20px;height:20px;background:#2f64cf;border-radius:50%;}
+    .field-scene .sea-beast{position:absolute;right:24px;top:58px;width:110px;height:46px;background:linear-gradient(180deg,#77caef,#2b6891);clip-path:polygon(0 70%,20% 40%,44% 18%,72% 0,100% 38%,77% 46%,60% 74%,44% 86%,20% 96%,0 90%);opacity:.82}
+    .field-scene .area-name{position:absolute;left:14px;top:14px;padding:10px 14px;border-radius:18px;background:rgba(17,67,88,.78);border:2px solid rgba(255,255,255,.44);font-weight:900;box-shadow:var(--shadow)}
+    .field-main-grid{display:grid;grid-template-columns:64px 1fr 64px;gap:10px;align-items:start;}
+    .side-stack{display:grid;gap:10px;}
+    .icon-btn{
+      min-height:64px;border-radius:20px;padding:8px 6px;
+      background:linear-gradient(180deg,#d9f5ff,#73c6ff);border:2px solid #2c76ae;
+      box-shadow: inset 0 2px 0 rgba(255,255,255,.52), 0 4px 0 rgba(30,87,131,.78), var(--shadow);
+      display:flex;flex-direction:column;justify-content:center;align-items:center;font-size:11px;gap:4px;
+    }
+    .icon-btn .ico{font-size:20px;line-height:1;}
+    .map-panel{padding:10px 12px;}
+    .map-illustration{
+      height:130px;border-radius:18px;position:relative;overflow:hidden;
+      background:linear-gradient(180deg,#6fdaff 0%, #51c2ea 38%, #2a90bf 39%, #2f9ec8 100%);
+      border:2px solid rgba(255,255,255,.35);
+    }
+    .map-illustration::before{content:"";position:absolute;inset:12px 34px 18px 34px;background:#67b15c;border-radius:44% 52% 46% 54% / 60% 42% 58% 40%;box-shadow:inset 0 0 0 4px rgba(0,0,0,.08)}
+    .map-illustration::after{content:"";position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);width:100px;height:54px;border-radius:18px;background:rgba(77,163,219,.85);box-shadow:0 0 0 4px rgba(255,255,255,.18)}
+    .map-path{position:absolute;left:26%;top:61%;width:48%;height:12px;background:#e5c282;border-radius:999px;transform:rotate(-12deg)}
+    .map-node{position:absolute;width:24px;height:24px;border-radius:50%;background:#ff5c5c;border:4px solid #ffd77a;box-shadow:var(--shadow)}
+    .map-node.one{left:24%;top:62%}.map-node.two{left:50%;top:46%}.map-node.three{right:24%;top:28%}
+    .map-label{position:absolute;bottom:8px;left:10px;font-size:13px;font-weight:900;text-shadow:var(--text-shadow)}
+    .map-caption{margin-top:8px;display:flex;justify-content:space-between;gap:8px;align-items:center;}
+    .field-panel{min-height:246px;max-height:370px;overflow:auto;}
+    .list{display:grid;gap:10px;}
+    .monster-card,.dungeon-card,.info-card{
+      background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.08));
+      border:2px solid rgba(255,255,255,.18);border-radius:18px;padding:12px;box-shadow:var(--shadow);
+    }
+    .monster-card.selected,.dungeon-card.selected{outline:3px solid #ffd96d;}
+    .monster-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px;}
+    .name{font-size:16px;font-weight:900;}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(14,52,79,.72);border:1px solid rgba(255,255,255,.3);font-size:11px;font-weight:800;margin:2px 4px 0 0;}
+    .bar{height:10px;background:rgba(255,255,255,.16);border-radius:999px;overflow:hidden;margin:4px 0 8px;}
+    .fill{height:100%;background:linear-gradient(90deg,var(--good),#4fd7e4);}
+    .fill.mp{background:linear-gradient(90deg,#a3c3ff,#6e8fff);}.fill.low{background:linear-gradient(90deg,#ff8f8f,#f6b857)}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:11px;}
+    .stats div{padding:5px 6px;border-radius:10px;background:rgba(0,0,0,.14)}
+    .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+    .chip-row{display:flex;gap:6px;flex-wrap:wrap;}
+    .control-pad{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;}
+    .control-wheel{
+      grid-column:span 2;margin:0 auto;width:146px;height:146px;border-radius:50%;
+      background:radial-gradient(circle at 30% 30%, #a47f4f, #6f4725);
+      border:5px solid #e0be72;box-shadow:inset 0 0 0 4px rgba(255,255,255,.08), var(--shadow-deep);
+      position:relative;
+    }
+    .control-wheel::before{content:"";position:absolute;inset:23px;border-radius:50%;border:2px dashed rgba(255,235,178,.35)}
+    .panel-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;}
+    .tab-btn{
+      padding:10px 12px;border-radius:999px;background:rgba(12,53,80,.78);border:2px solid rgba(255,255,255,.34);
+      box-shadow:var(--shadow);font-size:12px;
+    }
+    .tab-btn.active{background:linear-gradient(180deg,#52d8ff,#1783cc);}
+    .empty{padding:20px;border:2px dashed rgba(255,255,255,.28);border-radius:18px;text-align:center;background:rgba(255,255,255,.06)}
+    .field-bottom-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+
+    /* battle */
+    .battle-layout{display:grid;gap:12px;padding-bottom:18px;}
+    .battle-top{margin-top:28px;display:flex;gap:8px;align-items:center;justify-content:space-between;}
+    .battle-counter{padding:10px 14px;border-radius:18px;background:rgba(5,30,52,.84);border:2px solid rgba(255,255,255,.38);font-size:18px;font-weight:1000;box-shadow:var(--shadow)}
+    .battle-switches{display:flex;gap:8px;}
+    .mini-switch{padding:10px 12px;border-radius:16px;background:linear-gradient(180deg,#ec9a65,#cf6534);border:2px solid #8f3f19;box-shadow:var(--shadow);font-size:13px;font-weight:900}
+    .arena{height:250px;border-radius:26px;overflow:hidden;position:relative;background:linear-gradient(180deg,#8ad9ff 0%, #7bcfff 34%, #efdb99 35%, #f2d58a 100%);border:4px solid rgba(255,255,255,.55);box-shadow:var(--shadow-deep);}
+    .arena::after{content:"";position:absolute;left:0;right:0;bottom:0;height:46px;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.12));}
+    .enemy-sprite-row{position:absolute;left:12px;right:12px;top:42px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;}
+    .enemy-slot{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;}
+    .sprite{
+      width:94px;height:94px;border-radius:28px 28px 34px 34px;background:radial-gradient(circle at 40% 30%, #fff7d5 0 18%, #ffe36f 19% 55%, #e0ad22 56% 100%);
+      border:4px solid rgba(255,255,255,.62);box-shadow:var(--shadow-deep);position:relative;
+    }
+    .sprite.beast{background:radial-gradient(circle at 45% 30%, #fff6d0 0 18%, #ffbf74 19% 55%, #d36c2c 56% 100%)}
+    .sprite.plant{background:radial-gradient(circle at 45% 30%, #fff7d0 0 18%, #a8ef7d 19% 55%, #49a754 56% 100%)}
+    .sprite.shell{background:radial-gradient(circle at 45% 30%, #fff 0 15%, #cbd7e6 16% 55%, #8290a3 56% 100%)}
+    .sprite.spirit{background:radial-gradient(circle at 45% 30%, #fff 0 16%, #ffb55e 17% 55%, #d45f22 56% 100%)}
+    .sprite.bird{background:radial-gradient(circle at 45% 30%, #fff 0 15%, #8feeff 16% 55%, #2d84be 56% 100%)}
+    .sprite.dragon{background:radial-gradient(circle at 45% 30%, #fff 0 15%, #ffc787 16% 55%, #c1542f 56% 100%)}
+    .sprite::before,.sprite::after{content:"";position:absolute;background:#2b2b3f;border-radius:50%;}
+    .sprite::before{width:11px;height:11px;left:26px;top:34px;box-shadow:28px 0 0 #2b2b3f}
+    .sprite::after{left:24px;bottom:18px;width:42px;height:18px;border-radius:0 0 22px 22px;background:rgba(34,34,48,.7)}
+    .enemy-name{text-align:center;font-size:12px;font-weight:900;line-height:1.3;text-shadow:var(--text-shadow)}
+    .enemy-hp{width:100%;max-width:112px}
+    .ally-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+    .ally-card{padding:10px;border-radius:18px;background:linear-gradient(180deg, rgba(58,125,198,.98), rgba(40,87,145,.98));border:3px solid rgba(200,229,255,.62);box-shadow:var(--shadow)}
+    .ally-card .name{font-size:14px;}
+    .ally-card .tiny{opacity:.95}
+    .command-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+    .battle-log{max-height:126px;overflow:auto;padding:12px;border-radius:18px;background:rgba(11,42,66,.84);border:2px solid rgba(255,255,255,.25);box-shadow:var(--shadow)}
+    .battle-log p{margin:0 0 6px;font-size:12px;line-height:1.45}
+
+    /* event */
+    .event-layout{display:grid;gap:12px;padding-bottom:18px;}
+    .event-scene{
+      margin-top:28px;height:340px;border-radius:28px;overflow:hidden;position:relative;
+      background:linear-gradient(180deg,#9ce4ff 0%, #80d6ff 30%, #7bc787 31%, #77c06d 68%, #5d9b51 100%);
+      border:4px solid rgba(255,255,255,.55);box-shadow:var(--shadow-deep);
+    }
+    .event-scene::before{content:"";position:absolute;left:0;right:0;bottom:0;height:42%;background:linear-gradient(180deg, rgba(255,255,255,0), rgba(0,0,0,.03)), radial-gradient(circle at 20% 0,#f4cf87 0 18%, transparent 19%), radial-gradient(circle at 52% 0,#f4d79a 0 18%, transparent 19%), radial-gradient(circle at 82% 0,#f4cf87 0 18%, transparent 19%)}
+    .event-arch{position:absolute;left:24%;top:72px;width:52%;height:60px;border:8px solid #e1b96c;border-bottom:none;border-radius:60px 60px 0 0;background:transparent;}
+    .npc,.player-sprite,.companion-sprite,.mentor-sprite{position:absolute;bottom:92px;width:64px;height:108px;border-radius:26px 26px 12px 12px;box-shadow:var(--shadow)}
+    .player-sprite{left:48px;background:linear-gradient(180deg,#3d80ea 0 28%,#f6c66d 28% 60%,#89704b 60% 100%)}
+    .companion-sprite{left:124px;background:radial-gradient(circle at 50% 24%, #ffffff 0 18%, #71c9f4 19% 58%, #2a7bb0 59% 100%);width:66px;height:66px;border-radius:50%;bottom:108px}
+    .npc{left:182px;background:linear-gradient(180deg,#ff8c65 0 24%,#f3f1ed 24% 100%)}
+    .mentor-sprite{right:54px;background:linear-gradient(180deg,#1f4c90 0 18%,#d8a56f 18% 48%,#2565c8 48% 100%);width:78px}
+    .monster-friend{position:absolute;right:16px;bottom:110px;width:76px;height:76px;border-radius:24px;background:radial-gradient(circle at 40% 30%, #fff9dc 0 18%, #ffe37a 19% 55%, #cc9d29 56% 100%);border:4px solid rgba(255,255,255,.58);box-shadow:var(--shadow)}
+    .dialogue-panel{min-height:280px;display:flex;flex-direction:column;justify-content:space-between;}
+    .speaker{display:inline-block;padding:8px 12px;border-radius:14px;background:rgba(8,22,40,.9);border:2px solid rgba(255,255,255,.28);font-weight:900;margin-bottom:10px;}
+    .dialogue-text{font-size:21px;line-height:1.75;font-weight:800;text-shadow:var(--text-shadow);min-height:140px;white-space:pre-wrap;}
+    .event-controls{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:12px;}
+
+    .toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:50;display:none;max-width:min(92vw,420px);padding:12px 16px;border-radius:999px;background:rgba(10,34,56,.95);border:2px solid rgba(255,255,255,.35);box-shadow:var(--shadow-deep);text-shadow:var(--text-shadow);font-weight:900;text-align:center}
+    .toast.show{display:block;animation:fade .2s ease-out;}
+
+    @media (max-width: 420px){
+      .title-logo .logo-main{font-size:36px}
+      .tap-text{font-size:28px}
+      .field-main-grid{grid-template-columns:58px 1fr 58px}
+      .icon-btn{min-height:58px;font-size:10px}
+      .arena{height:214px}
+      .enemy-sprite-row{top:38px;gap:6px}
+      .sprite{width:68px;height:68px;border-radius:20px 20px 24px 24px;border-width:3px}
+      .sprite::before{width:8px;height:8px;left:19px;top:25px;box-shadow:21px 0 0 #2b2b3f}
+      .sprite::after{left:18px;bottom:13px;width:32px;height:14px}
+      .enemy-name{font-size:10px}
+      .command-grid{grid-template-columns:repeat(3,1fr);gap:8px}
+      .command-btn{min-height:50px;font-size:15px;padding:8px 4px;border-radius:15px}
+      .small-row{grid-template-columns:1fr 1fr 1fr}
+      .dialogue-text{font-size:18px}
+      .ally-row{grid-template-columns:repeat(3,1fr);gap:6px}
+      .ally-card{padding:7px;border-width:2px;border-radius:14px}
+      .ally-card .name{font-size:12px}
+      .ally-card .tiny{font-size:10px}
+      .ally-card .bar{height:7px;margin:3px 0 5px}
+      .stats{grid-template-columns:repeat(2,1fr)}
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrap">
+    <div class="device">
+      <section id="titleView" class="view active"></section>
+      <section id="fieldView" class="view"></section>
+      <section id="battleView" class="view"></section>
+      <section id="eventView" class="view"></section>
+    </div>
+  </div>
+  <div id="toast" class="toast"></div>
+
+  <script>
+  "use strict";
+
+  const STORAGE_KEY = "crystal_monsters_ui_overhaul_v1";
+  const skills = {
+    bite: { id: "bite", name: "かみつき", mp: 2, power: 1.35, type: "physical", desc: "敵1体に物理ダメージ" },
+    spark: { id: "spark", name: "小さな雷", mp: 3, power: 1.45, type: "storm", desc: "素早さを少し乗せる雷撃" },
+    leaf: { id: "leaf", name: "若葉の癒し", mp: 4, power: -1.15, type: "heal", desc: "味方1体を回復" },
+    ember: { id: "ember", name: "ほのおだね", mp: 3, power: 1.45, type: "fire", desc: "火属性の魔法攻撃" },
+    aqua: { id: "aqua", name: "水しぶき", mp: 3, power: 1.35, type: "water", desc: "水属性の魔法攻撃" },
+    guard: { id: "guard", name: "まもりの構え", mp: 2, power: 0, type: "buff", desc: "一時的に防御を上げる" },
+    mind: { id: "mind", name: "知恵の光", mp: 5, power: 1.7, type: "magic", desc: "賢さ依存の魔法攻撃" },
+    fangrush: { id: "fangrush", name: "連牙", mp: 5, power: 1.75, type: "physical", desc: "強めの物理攻撃" }
+  };
+
+  const species = {
+    plumo: {
+      id: "plumo", name: "プルモ", category: "ゼリー系", element: "水", rank: "F",
+      base: { hp: 32, mp: 14, atk: 11, def: 10, spd: 12, wis: 9 },
+      growth: { hp: 7, mp: 3, atk: 3, def: 3, spd: 3, wis: 2 },
+      skills: ["bite", "aqua"], scoutRate: 55,
+      desc: "ぷにぷにした水辺の小型モンスター。打たれ弱いが育てやすい。"
+    },
+    kobud: {
+      id: "kobud", name: "コブッド", category: "獣系", element: "地", rank: "F",
+      base: { hp: 38, mp: 8, atk: 15, def: 12, spd: 10, wis: 6 },
+      growth: { hp: 8, mp: 2, atk: 4, def: 3, spd: 2, wis: 1 },
+      skills: ["bite", "fangrush"], scoutRate: 45,
+      desc: "石の角を持つ突進好き。序盤の物理役。"
+    },
+    pyrop: {
+      id: "pyrop", name: "ピロップ", category: "精霊系", element: "火", rank: "E",
+      base: { hp: 30, mp: 20, atk: 8, def: 8, spd: 14, wis: 16 },
+      growth: { hp: 6, mp: 4, atk: 2, def: 2, spd: 3, wis: 4 },
+      skills: ["ember", "mind"], scoutRate: 35,
+      desc: "火花のように跳ねる精霊。魔法攻撃が得意。"
+    },
+    florin: {
+      id: "florin", name: "フロリン", category: "植物系", element: "木", rank: "E",
+      base: { hp: 34, mp: 22, atk: 8, def: 11, spd: 9, wis: 15 },
+      growth: { hp: 7, mp: 5, atk: 2, def: 3, spd: 2, wis: 4 },
+      skills: ["leaf", "guard"], scoutRate: 42,
+      desc: "小さな花冠をかぶった癒し手。長期戦を支える。"
+    },
+    voltwing: {
+      id: "voltwing", name: "ボルトウィング", category: "鳥系", element: "雷", rank: "D",
+      base: { hp: 36, mp: 18, atk: 13, def: 9, spd: 20, wis: 12 },
+      growth: { hp: 6, mp: 3, atk: 3, def: 2, spd: 5, wis: 3 },
+      skills: ["spark", "bite"], scoutRate: 28,
+      desc: "帯電した羽を持つ鳥型モンスター。行動が速い。"
+    },
+    armordo: {
+      id: "armordo", name: "アーマード", category: "甲殻系", element: "鋼", rank: "D",
+      base: { hp: 48, mp: 10, atk: 16, def: 22, spd: 6, wis: 7 },
+      growth: { hp: 9, mp: 2, atk: 4, def: 5, spd: 1, wis: 1 },
+      skills: ["guard", "fangrush"], scoutRate: 24,
+      desc: "硬い外殻を持つ防御役。遅いが崩れにくい。"
+    },
+    lunacat: {
+      id: "lunacat", name: "ルナキャット", category: "獣系", element: "月", rank: "C",
+      base: { hp: 44, mp: 26, atk: 18, def: 13, spd: 23, wis: 18 },
+      growth: { hp: 7, mp: 5, atk: 4, def: 3, spd: 5, wis: 4 },
+      skills: ["spark", "mind", "fangrush"], scoutRate: 14,
+      desc: "月光をまとう俊敏な獣。配合で狙いやすい中盤エース。"
+    },
+    drakid: {
+      id: "drakid", name: "ドラキッド", category: "竜系", element: "火", rank: "C",
+      base: { hp: 52, mp: 18, atk: 22, def: 17, spd: 14, wis: 12 },
+      growth: { hp: 9, mp: 3, atk: 5, def: 4, spd: 3, wis: 2 },
+      skills: ["ember", "fangrush", "guard"], scoutRate: 12,
+      desc: "小型の幻竜。火力と耐久のバランスがよい。"
+    }
+  };
+
+  const categoryFusion = {
+    "ゼリー系+獣系": "kobud", "獣系+ゼリー系": "kobud",
+    "ゼリー系+精霊系": "pyrop", "精霊系+ゼリー系": "pyrop",
+    "植物系+精霊系": "florin", "精霊系+植物系": "florin",
+    "鳥系+精霊系": "voltwing", "精霊系+鳥系": "voltwing",
+    "獣系+鳥系": "lunacat", "鳥系+獣系": "lunacat",
+    "甲殻系+獣系": "armordo", "獣系+甲殻系": "armordo",
+    "火+獣系": "drakid", "獣系+火": "drakid"
+  };
+
+  const dungeons = [
+    { id: "meadow", name: "はじまりの草原", floors: 3, recommended: 1, enemies: ["plumo", "kobud", "florin"], boss: "kobud", reward: { gold: 60, item: "スカウトビスケット" }, desc: "勧誘と基本戦闘を覚える浅い草原。" },
+    { id: "embercave", name: "火花の洞穴", floors: 4, recommended: 4, enemies: ["pyrop", "kobud", "armordo"], boss: "pyrop", reward: { gold: 120, item: "癒しの葉" }, desc: "魔法系の敵が多い洞穴。防御と回復が鍵。" },
+    { id: "stormtower", name: "雷鳴の塔", floors: 5, recommended: 7, enemies: ["voltwing", "pyrop", "armordo", "lunacat"], boss: "voltwing", reward: { gold: 220, item: "融合石" }, desc: "素早い敵が連続で出る中盤ダンジョン。" }
+  ];
+
+  const rankValue = { F: 1, E: 2, D: 3, C: 4, B: 5, A: 6, S: 7 };
+
+  function defaultState() {
+    const owned = [createMonster("plumo", 1), createMonster("kobud", 1), createMonster("florin", 1)];
+    return {
+      gold: 120,
+      items: { "スカウトビスケット": 3, "癒しの葉": 2, "融合石": 1 },
+      owned,
+      partyIds: owned.slice(0,3).map(m=>m.uid),
+      codex: ["plumo", "kobud", "florin"],
+      progress: { cleared: [] },
+      settings: { consumeParents: true },
+      battle: null,
+      selectedDungeonId: "meadow"
+    };
+  }
+
+  let state = loadState();
+  let ui = {
+    view: "title",
+    fieldPanel: "overview",
+    fusionA: null,
+    fusionB: null,
+    currentEvent: null,
+    eventIndex: 0,
+    battleTurn: 1,
+    battleSpeed: "通常速度",
+    autoBattle: false,
+    fieldAreaName: "潮風の入り江"
+  };
+
+  const eventScenes = {
+    intro: [
+      { speaker: "案内人", text: "ようこそ、幻晶の島々へ。\nここでは不思議なモンスターたちと出会い、仲間にできます。" },
+      { speaker: "案内人", text: "海辺の草原で仲間を集め、配合で新しい力を生み出しましょう。\nまずは拠点から冒険を始めてください。" },
+      { speaker: "主人公", text: "よし、最初の島から出発だ！" }
+    ],
+    firstScout: [
+      { speaker: "育て親", text: "初めて仲間にしたモンスターは、きっと旅の宝物になる。" },
+      { speaker: "育て親", text: "大切に育てて、いつかまだ見ぬ配合にも挑んでみなさい。" }
+    ]
+  };
+
+  function uid(){ return "m_" + Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4); }
+  function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
+  function unique(arr){ return [...new Set(arr)]; }
+  function randomPick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+  function statAt(specId, level, bonus = null) {
+    const sp = species[specId];
+    const stats = {};
+    for (const k of Object.keys(sp.base)) stats[k] = sp.base[k] + sp.growth[k] * (level - 1) + (bonus?.[k] || 0);
+    return stats;
+  }
+
+  function createMonster(specId, level = 1, options = {}) {
+    const sp = species[specId];
+    const bonus = options.bonus || {};
+    return {
+      uid: uid(), speciesId: specId, nickname: options.nickname || sp.name,
+      level, exp: options.exp || 0, bonus,
+      stats: statAt(specId, level, bonus),
+      currentHp: statAt(specId, level, bonus).hp,
+      currentMp: statAt(specId, level, bonus).mp,
+      skills: unique([...(sp.skills || []), ...(options.extraSkills || [])]).slice(0, 4),
+      parents: options.parents || null
+    };
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaultState();
+      const parsed = JSON.parse(raw);
+      parsed.gold ??= 120;
+      parsed.items ??= { "スカウトビスケット": 3, "癒しの葉": 2, "融合石": 1 };
+      parsed.owned ??= [];
+      parsed.partyIds ??= parsed.owned.slice(0,3).map(m=>m.uid);
+      parsed.codex ??= [];
+      parsed.progress ??= { cleared: [] };
+      parsed.settings ??= { consumeParents: true };
+      parsed.battle ??= null;
+      parsed.selectedDungeonId ??= "meadow";
+      for (const m of parsed.owned) {
+        const mx = maxStats(m);
+        m.currentHp ??= mx.hp; m.currentMp ??= mx.mp; m.skills ??= species[m.speciesId]?.skills || [];
+      }
+      return parsed;
+    } catch(e) {
+      console.warn(e); return defaultState();
+    }
+  }
+  function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  function maxStats(mon){ return statAt(mon.speciesId, mon.level, mon.bonus || {}); }
+  function getOwned(id){ return state.owned.find(m=>m.uid===id); }
+  function party(){ return state.partyIds.map(getOwned).filter(Boolean); }
+  function aliveParty(){ return party().filter(m=>m.currentHp>0); }
+  function totalPower(mon){ const st=maxStats(mon); return st.hp + st.mp*.7 + st.atk*2 + st.def*1.5 + st.spd*1.3 + st.wis*1.5 + mon.level*8; }
+  function speciesCss(mon){ const cat = species[mon.speciesId].category; if (cat.includes("獣")) return "beast"; if (cat.includes("植物")) return "plant"; if (cat.includes("甲殻")) return "shell"; if (cat.includes("精霊")) return "spirit"; if (cat.includes("鳥")) return "bird"; if (cat.includes("竜")) return "dragon"; return ""; }
+
+  function showToast(msg){
+    const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(showToast.timer); showToast.timer = setTimeout(()=>t.classList.remove('show'), 2200);
+  }
+  function escapeHtml(str){ return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
+  function pillStats(){
+    return `
+      <div class="top-pills">
+        <span class="pill">G ${state.gold}</span>
+        <span class="pill">所持 ${state.owned.length}体</span>
+        <span class="pill">図鑑 ${new Set(state.codex).size}/${Object.keys(species).length}</span>
+        <span class="pill">PT ${party().length}/3</span>
+      </div>`;
+  }
+  function topBar(area){
+    return `
+      <div class="frame-top">
+        <div class="status-bubble"><div class="slime-badge">幻晶モンスターズ</div></div>
+        <div class="status-bubble">
+          <div class="clock-badge">AREA ${escapeHtml(area)}</div>
+          <div class="battery-badge">保存OK</div>
+        </div>
+      </div>`;
+  }
+
+  function switchView(view){
+    ui.view = view;
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === view + 'View'));
+    render();
+  }
+
+  function render(){
+    renderTitle(); renderField(); renderBattle(); renderEvent();
+  }
+
+  function renderTitle(){
+    const el = document.getElementById('titleView');
+    el.innerHTML = `
+      <div class="title-stage">
+        <div>
+          <div class="tiny text-outline" style="margin-top:26px;font-weight:900;">Ver.1.1.0</div>
+          <div class="title-hero">
+            <div class="palm"><div class="leaf"></div><div class="leaf"></div><div class="leaf"></div><div class="leaf"></div><div class="trunk"></div></div>
+            <div class="palm right"><div class="leaf"></div><div class="leaf"></div><div class="leaf"></div><div class="leaf"></div><div class="trunk"></div></div>
+            <div class="title-logo">
+              <div class="logo-top">TROPICAL FANTASY RPG</div>
+              <div class="logo-main">幻晶モンスターズ</div>
+              <div class="logo-sub">孤島の鍵と七つの庭園</div>
+            </div>
+            <div class="mascot"><div class="ear left"></div><div class="ear right"></div><div class="foot left"></div><div class="foot right"></div></div>
+            <div class="island-shrine"><div class="roof"></div><div class="tower"></div></div>
+          </div>
+          <div class="tap-panel">
+            <div class="tap-text">Tap to Start</div>
+            <button class="wide-btn" onclick="startAdventure()">冒険をはじめる</button>
+          </div>
+        </div>
+        <div class="title-bottom">
+          <div class="small-row">
+            <button class="small-btn" onclick="openSaveLoadFromTitle()">セーブ/ロード</button>
+            <button class="small-btn" onclick="openSettingsFromTitle()">設定</button>
+            <button class="small-btn" onclick="showLicense()">ライセンス</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderField(){
+    const el = document.getElementById('fieldView');
+    const selected = dungeons.find(d=>d.id===state.selectedDungeonId) || dungeons[0];
+    const panelContent = renderFieldPanelContent();
+    el.innerHTML = `
+      <div class="field-layout">
+        ${topBar(ui.fieldAreaName)}
+        <div class="field-scene">
+          <div class="area-name">${escapeHtml(ui.fieldAreaName)}</div>
+          <div class="path"></div>
+          <div class="water"></div>
+          <div class="walker"></div>
+          <div class="sea-beast"></div>
+        </div>
+        ${pillStats()}
+        <div class="field-main-grid">
+          <div class="side-stack">
+            <button class="icon-btn" onclick="setFieldPanel('overview')"><span class="ico">🏝️</span><span>拠点</span></button>
+            <button class="icon-btn" onclick="setFieldPanel('party')"><span class="ico">👥</span><span>パーティ</span></button>
+            <button class="icon-btn" onclick="setFieldPanel('ranch')"><span class="ico">🐾</span><span>牧場</span></button>
+          </div>
+          <div>
+            <div class="glass map-panel">
+              <div class="map-illustration">
+                <div class="map-path"></div>
+                <div class="map-node one"></div>
+                <div class="map-node two"></div>
+                <div class="map-node three"></div>
+                <div class="map-label">選択中: ${escapeHtml(selected.name)}</div>
+              </div>
+              <div class="map-caption tiny mini-outline"><span>推奨Lv ${selected.recommended}</span><span>${selected.floors}階層</span></div>
+            </div>
+          </div>
+          <div class="side-stack">
+            <button class="icon-btn" onclick="setFieldPanel('dungeons')"><span class="ico">🗺️</span><span>探索</span></button>
+            <button class="icon-btn" onclick="setFieldPanel('fusion')"><span class="ico">✨</span><span>配合</span></button>
+            <button class="icon-btn" onclick="setFieldPanel('codex')"><span class="ico">📘</span><span>図鑑</span></button>
+          </div>
+        </div>
+
+        <div class="wood-panel field-panel"><div class="panel-inner">${panelContent}</div></div>
+
+        <div class="control-pad">
+          <div class="control-wheel"></div>
+          <div class="field-bottom-actions" style="grid-column:span 2;">
+            <button class="action-btn" onclick="startDungeon(state.selectedDungeonId)">探索開始</button>
+            <button class="action-btn" onclick="showEvent('firstScout')">イベント</button>
+            <button class="action-btn" onclick="healParty()">休憩 30G</button>
+            <button class="action-btn" onclick="setFieldPanel('settings')">メニュー</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function setFieldPanel(name){ ui.fieldPanel = name; renderField(); }
+
+  function renderFieldPanelContent(){
+    const active = ui.fieldPanel;
+    const tabs = `
+      <div class="panel-tabs">
+        ${[
+          ['overview','拠点'],['dungeons','探索'],['party','パーティ'],['ranch','牧場'],['fusion','配合'],['codex','図鑑'],['settings','設定']
+        ].map(([id,label]) => `<button class="tab-btn ${active===id?'active':''}" onclick="setFieldPanel('${id}')">${label}</button>`).join('')}
+      </div>`;
+
+    if (active === 'overview') {
+      const selected = dungeons.find(d=>d.id===state.selectedDungeonId) || dungeons[0];
+      return `
+        <div class="panel-title">拠点メニュー</div>
+        <div class="muted tiny">島の中央拠点から、探索・編成・配合へ移動できます。</div>
+        ${tabs}
+        <div class="list">
+          <div class="info-card">
+            <div class="name">次の目的地</div>
+            <div class="tiny muted">${escapeHtml(selected.name)} / 推奨Lv ${selected.recommended}</div>
+            <p class="tiny" style="margin:8px 0 0;">${escapeHtml(selected.desc)}</p>
+          </div>
+          <div class="info-card">
+            <div class="name">遊び方の流れ</div>
+            <div class="tiny muted">探索 → 戦闘 → 勧誘 → 育成 → 配合</div>
+            <div class="chip-row" style="margin-top:8px;">
+              <span class="badge">仲間を集める</span><span class="badge">レベルを上げる</span><span class="badge">図鑑を埋める</span>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    if (active === 'dungeons') {
+      return `
+        <div class="panel-title">探索先を選ぶ</div>
+        <div class="muted tiny">中央マップと連動して、ダンジョンを選択できます。</div>
+        ${tabs}
+        <div class="list">
+          ${dungeons.map(d => `
+            <div class="dungeon-card ${state.selectedDungeonId===d.id?'selected':''}">
+              <div class="monster-head"><div><div class="name">${escapeHtml(d.name)}</div><div class="tiny muted">推奨Lv ${d.recommended} / ${d.floors}階層</div></div><div class="badge">${state.progress.cleared.includes(d.id)?'CLEAR':'未踏破'}</div></div>
+              <div class="tiny">${escapeHtml(d.desc)}</div>
+              <div class="btn-row">
+                <button class="small-btn" onclick="selectDungeon('${d.id}')">選択</button>
+                <button class="small-btn" onclick="startDungeon('${d.id}')">開始</button>
+              </div>
+            </div>`).join('')}
+        </div>`;
+    }
+
+    if (active === 'party') {
+      return `
+        <div class="panel-title">パーティ編成</div>
+        <div class="muted tiny">最大3体まで編成できます。おすすめ編成も可能です。</div>
+        ${tabs}
+        <div class="btn-row"><button class="small-btn" onclick="autoParty()">おすすめ編成</button><button class="small-btn" onclick="clearParty()">全解除</button></div>
+        <div class="list" style="margin-top:10px;">
+          ${party().length ? party().map(m=>fieldMonsterCard(m, true)).join('') : `<div class="empty">パーティ未編成</div>`}
+        </div>
+        <div class="panel-title" style="margin-top:14px;">編成候補</div>
+        <div class="list">
+          ${state.owned.map(m => fieldMonsterCard(m, false)).join('')}
+        </div>`;
+    }
+
+    if (active === 'ranch') {
+      return `
+        <div class="panel-title">牧場 / 所持モンスター</div>
+        <div class="muted tiny">名前変更や回復アイテムの使用ができます。</div>
+        ${tabs}
+        <div class="list">${state.owned.map(m => ranchMonsterCard(m)).join('')}</div>`;
+    }
+
+    if (active === 'fusion') {
+      const parentA = getOwned(ui.fusionA);
+      const parentB = getOwned(ui.fusionB);
+      const preview = parentA && parentB && parentA.uid !== parentB.uid ? previewFusion(parentA, parentB) : null;
+      return `
+        <div class="panel-title">配合の祭壇</div>
+        <div class="muted tiny">親2体を選んで、新しいモンスターを生み出します。</div>
+        ${tabs}
+        <div class="btn-row"><button class="small-btn" onclick="toggleConsumeParents()">親消費: ${state.settings.consumeParents ? 'ON' : 'OFF'}</button></div>
+        <div class="list" style="margin-top:10px;">
+          <div class="info-card">
+            <div class="tiny muted">親A</div>
+            <select onchange="ui.fusionA=this.value || null; renderField();" style="width:100%;padding:10px;border-radius:12px;margin-top:6px;">
+              <option value="">選択してください</option>
+              ${state.owned.map(m=>`<option value="${m.uid}" ${ui.fusionA===m.uid?'selected':''}>${escapeHtml(m.nickname)} / ${escapeHtml(species[m.speciesId].name)} Lv.${m.level}</option>`).join('')}
+            </select>
+            ${parentA ? miniMonster(parentA) : `<div class="empty" style="margin-top:8px;">未選択</div>`}
+          </div>
+          <div class="info-card">
+            <div class="tiny muted">親B</div>
+            <select onchange="ui.fusionB=this.value || null; renderField();" style="width:100%;padding:10px;border-radius:12px;margin-top:6px;">
+              <option value="">選択してください</option>
+              ${state.owned.map(m=>`<option value="${m.uid}" ${ui.fusionB===m.uid?'selected':''}>${escapeHtml(m.nickname)} / ${escapeHtml(species[m.speciesId].name)} Lv.${m.level}</option>`).join('')}
+            </select>
+            ${parentB ? miniMonster(parentB) : `<div class="empty" style="margin-top:8px;">未選択</div>`}
+          </div>
+          <div class="info-card">
+            <div class="name">配合プレビュー</div>
+            ${preview ? fusionPreviewHtml(preview) : `<div class="empty" style="margin-top:8px;">異なる2体を選ぶと結果が表示されます</div>`}
+            <div class="btn-row"><button class="small-btn" ${preview?'':'disabled'} onclick="executeFusion()">配合実行</button></div>
+          </div>
+        </div>`;
+    }
+
+    if (active === 'codex') {
+      const discovered = new Set(state.codex);
+      return `
+        <div class="panel-title">図鑑</div>
+        <div class="muted tiny">遭遇・勧誘・配合で登録されます。</div>
+        ${tabs}
+        <div class="list">
+          ${Object.values(species).map(sp => `
+            <div class="monster-card">
+              ${discovered.has(sp.id) ? `
+                <div class="monster-head"><div><div class="name">${escapeHtml(sp.name)}</div><div class="tiny muted">${sp.category} / ${sp.element}</div></div><div class="badge">Rank ${sp.rank}</div></div>
+                <div class="tiny">${escapeHtml(sp.desc)}</div>
+                <div class="chip-row" style="margin-top:8px;">${sp.skills.map(id=>`<span class="badge">${escapeHtml(skills[id].name)}</span>`).join('')}</div>
+              ` : `<div class="name">？？？？</div><div class="tiny muted">まだ発見していません。</div>`}
+            </div>`).join('')}
+        </div>`;
+    }
+
+    if (active === 'settings') {
+      return `
+        <div class="panel-title">メニュー / 設定</div>
+        ${tabs}
+        <div class="list">
+          <div class="info-card">
+            <div class="name">セーブデータ</div>
+            <div class="btn-row">
+              <button class="small-btn" onclick="saveNow()">手動保存</button>
+              <button class="small-btn" onclick="switchView('title')">タイトルへ</button>
+              <button class="small-btn" onclick="resetGame()">初期化</button>
+            </div>
+          </div>
+          <div class="info-card"><div class="name">現在の構成</div><div class="tiny muted">タイトル / フィールド / 戦闘 / イベントの縦画面UIを優先して改修しています。</div></div>
+        </div>`;
+    }
+    return '';
+  }
+
+  function fieldMonsterCard(mon, inParty){
+    const sp = species[mon.speciesId]; const max = maxStats(mon);
+    const hpRate = Math.max(0, Math.min(100, Math.round(mon.currentHp / max.hp * 100)));
+    return `
+      <div class="monster-card ${inParty ? 'selected':''}">
+        <div class="monster-head"><div><div class="name">${escapeHtml(mon.nickname)}</div><div class="tiny muted">${sp.category} / ${sp.element} / Lv.${mon.level}</div></div><div class="badge">Rank ${sp.rank}</div></div>
+        <div class="tiny">HP ${mon.currentHp}/${max.hp}</div><div class="bar"><div class="fill ${hpRate<35?'low':''}" style="width:${hpRate}%"></div></div>
+        <div class="stats"><div>攻 ${max.atk}</div><div>防 ${max.def}</div><div>速 ${max.spd}</div><div>賢 ${max.wis}</div><div>MP ${mon.currentMp}</div><div>Exp ${mon.exp}</div></div>
+        <div class="btn-row">
+          ${inParty ? `<button class="small-btn" onclick="removeFromParty('${mon.uid}')">外す</button>` : `<button class="small-btn" onclick="addToParty('${mon.uid}')" ${state.partyIds.includes(mon.uid)?'disabled':''}>編成</button>`}
+        </div>
+      </div>`;
+  }
+
+  function ranchMonsterCard(mon){
+    const sp = species[mon.speciesId]; const max = maxStats(mon);
+    const hpRate = Math.max(0, Math.min(100, Math.round(mon.currentHp / max.hp * 100)));
+    return `
+      <div class="monster-card">
+        <div class="monster-head"><div><div class="name">${escapeHtml(mon.nickname)}</div><div class="tiny muted">${sp.category} / ${sp.element} / Lv.${mon.level}</div></div><div class="badge">Rank ${sp.rank}</div></div>
+        <div class="tiny">HP ${mon.currentHp}/${max.hp}</div><div class="bar"><div class="fill ${hpRate<35?'low':''}" style="width:${hpRate}%"></div></div>
+        <div class="chip-row">${mon.skills.map(id=>`<span class="badge">${escapeHtml(skills[id].name)}</span>`).join('')}</div>
+        <div class="btn-row"><button class="small-btn" onclick="renameMonster('${mon.uid}')">名前変更</button><button class="small-btn" onclick="useHealItem('${mon.uid}')">癒しの葉</button></div>
+      </div>`;
+  }
+
+  function miniMonster(mon){
+    const sp = species[mon.speciesId];
+    return `<div class="monster-card" style="margin-top:8px;"><div class="monster-head"><div><div class="name">${escapeHtml(mon.nickname)}</div><div class="tiny muted">${sp.category} / ${sp.element} / Lv.${mon.level}</div></div><div class="badge">Rank ${sp.rank}</div></div></div>`;
+  }
+
+  function previewFusion(a,b){
+    const sa = species[a.speciesId]; const sb = species[b.speciesId];
+    const directKeys = [`${sa.category}+${sb.category}`, `${sa.element}+${sb.category}`, `${sb.element}+${sa.category}`, `${sa.category}+${sb.element}`];
+    let childSpecies = null;
+    for (const key of directKeys) { if (categoryFusion[key]) { childSpecies = categoryFusion[key]; break; } }
+    if (!childSpecies) childSpecies = chooseFallbackSpecies(a,b);
+    const childSp = species[childSpecies];
+    const childLevel = Math.max(1, Math.floor((a.level + b.level) / 2) - 2);
+    const aStats=maxStats(a), bStats=maxStats(b); const bonus={};
+    for (const k of Object.keys(aStats)) bonus[k] = Math.floor(((aStats[k]+bStats[k])/2)*0.12);
+    const inherited = unique([...a.skills, ...b.skills, ...childSp.skills]).slice(0,4);
+    const child = createMonster(childSpecies, childLevel, { bonus, extraSkills: inherited, parents:[a.speciesId,b.speciesId] });
+    child.skills = inherited; child.nickname = childSp.name;
+    return { child, childSp, bonus, inherited };
+  }
+  function chooseFallbackSpecies(a,b){
+    const sa = species[a.speciesId], sb = species[b.speciesId];
+    const avgRank = Math.round((rankValue[sa.rank] + rankValue[sb.rank]) / 2);
+    const candidates = Object.values(species).filter(sp => rankValue[sp.rank] <= avgRank + 1).sort((x,y)=>{
+      const scoreX = (x.element===sa.element || x.element===sb.element ? -2 : 0) + Math.abs(rankValue[x.rank]-avgRank);
+      const scoreY = (y.element===sa.element || y.element===sb.element ? -2 : 0) + Math.abs(rankValue[y.rank]-avgRank);
+      return scoreX - scoreY;
+    });
+    return candidates[0]?.id || 'plumo';
+  }
+  function fusionPreviewHtml(preview){
+    const m=preview.child, sp=species[m.speciesId], st=maxStats(m);
+    return `
+      <div class="monster-card" style="margin-top:8px;">
+        <div class="monster-head"><div><div class="name">${sp.name}</div><div class="tiny muted">${sp.category} / ${sp.element} / Lv.${m.level}</div></div><div class="badge">Rank ${sp.rank}</div></div>
+        <div class="tiny">${escapeHtml(sp.desc)}</div>
+        <div class="stats" style="margin-top:8px;"><div>HP ${st.hp}</div><div>MP ${st.mp}</div><div>攻 ${st.atk}</div><div>防 ${st.def}</div><div>速 ${st.spd}</div><div>賢 ${st.wis}</div></div>
+        <div class="chip-row" style="margin-top:8px;">${m.skills.map(id=>`<span class="badge">${escapeHtml(skills[id].name)}</span>`).join('')}</div>
+      </div>`;
+  }
+
+  function executeFusion(){
+    const a=getOwned(ui.fusionA), b=getOwned(ui.fusionB);
+    if (!a || !b || a.uid===b.uid) return showToast('異なる2体を選んでください');
+    const preview = previewFusion(a,b);
+    const child = preview.child;
+    state.owned.push(child); state.codex = unique([...state.codex, child.speciesId]);
+    if (state.settings.consumeParents) {
+      state.owned = state.owned.filter(m => m.uid!==a.uid && m.uid!==b.uid);
+      state.partyIds = state.partyIds.filter(id => id!==a.uid && id!==b.uid);
+    }
+    ui.fusionA = null; ui.fusionB = null; saveState(); showToast(`${child.nickname}が誕生しました！`); setFieldPanel('ranch'); renderField();
+  }
+
+  function toggleConsumeParents(){ state.settings.consumeParents = !state.settings.consumeParents; saveState(); renderField(); }
+  function selectDungeon(id){ state.selectedDungeonId = id; saveState(); renderField(); showToast(`${dungeons.find(d=>d.id===id).name}を選択しました`); }
+  function addToParty(id){ if (state.partyIds.includes(id)) return; if (state.partyIds.length >= 3) return showToast('パーティは最大3体です'); state.partyIds.push(id); saveState(); renderField(); }
+  function removeFromParty(id){ state.partyIds = state.partyIds.filter(x=>x!==id); saveState(); renderField(); }
+  function clearParty(){ state.partyIds = []; saveState(); renderField(); }
+  function autoParty(){ state.partyIds = [...state.owned].sort((a,b)=>totalPower(b)-totalPower(a)).slice(0,3).map(m=>m.uid); saveState(); renderField(); showToast('おすすめ編成にしました'); }
+  function renameMonster(id){ const mon=getOwned(id); const name=prompt('新しい名前を入力してください', mon.nickname); if (!name?.trim()) return; mon.nickname = name.trim().slice(0,12); saveState(); renderField(); showToast('名前を変更しました'); }
+  function useHealItem(id){ if ((state.items['癒しの葉']||0)<=0) return showToast('癒しの葉がありません'); const mon=getOwned(id); const max=maxStats(mon); mon.currentHp=Math.min(max.hp, mon.currentHp+40); state.items['癒しの葉']--; saveState(); renderField(); showToast(`${mon.nickname}を回復しました`); }
+  function healParty(){ if (state.gold < 30) return showToast('ゴールドが足りません'); state.gold -= 30; for (const m of party()) { const max=maxStats(m); m.currentHp=max.hp; m.currentMp=max.mp; } saveState(); render(); showToast('パーティが全回復しました'); }
+  function saveNow(){ saveState(); showToast('手動保存しました'); }
+  function resetGame(){ if (!confirm('セーブデータを初期化します。よろしいですか？')) return; localStorage.removeItem(STORAGE_KEY); state = defaultState(); ui.fieldPanel='overview'; saveState(); render(); showToast('初期化しました'); }
+
+  function renderBattle(){
+    const el = document.getElementById('battleView');
+    const b = state.battle;
+    if (!b) {
+      el.innerHTML = `<div class="battle-layout">${topBar('戦闘待機')}<div class="wood-panel"><div class="panel-inner"><div class="panel-title">現在戦闘中ではありません</div><button class="wide-btn" onclick="switchView('field')">フィールドへ戻る</button></div></div></div>`;
+      return;
+    }
+    const dungeon = dungeons.find(d=>d.id===b.dungeonId);
+    el.innerHTML = `
+      <div class="battle-layout">
+        <div class="battle-top">
+          <div class="battle-counter">ラウンド ${ui.battleTurn}</div>
+          <div class="battle-switches"><button class="mini-switch" onclick="toggleBattleSpeed()">${ui.battleSpeed}</button><button class="mini-switch" onclick="toggleAutoBattle()">オート ${ui.autoBattle?'ON':'OFF'}</button></div>
+        </div>
+        <div class="arena">
+          <div class="enemy-sprite-row">
+            ${[0,1,2].map(i => battleEnemySlot(b.enemies[i])).join('')}
+          </div>
+        </div>
+        <div class="ally-row">${party().map(m => allyCard(m)).join('')}</div>
+        <div class="command-grid">
+          <button class="command-btn" onclick="playerAttack()" ${b.status!=='battle'?'disabled':''}>戦う</button>
+          <button class="command-btn" onclick="playerSkill()" ${b.status!=='battle'?'disabled':''}>スキル</button>
+          <button class="command-btn alt" onclick="playerScout()" ${b.status!=='battle'?'disabled':''}>勧誘</button>
+          <button class="command-btn warn" onclick="useBattleItem()" ${b.status!=='battle'?'disabled':''}>道具</button>
+          <button class="command-btn alt" onclick="toggleAutoBattle()">作戦</button>
+          <button class="command-btn danger" onclick="escapeBattle()" ${b.status!=='battle'?'disabled':''}>逃げる</button>
+        </div>
+        ${b.status==='floorClear' ? `<button class="wide-btn" onclick="nextFloor()">次の階層へ</button>` : ''}
+        ${b.status==='dungeonClear' ? `<button class="wide-btn" onclick="finishDungeon()">報酬を受け取る</button>` : ''}
+        ${b.status==='lose' ? `<button class="wide-btn" onclick="finishLose()">拠点へ戻る</button>` : ''}
+        <div class="battle-log">${b.log.slice(-25).map(x=>`<p>${escapeHtml(x)}</p>`).join('')}</div>
+      </div>`;
+    const log=el.querySelector('.battle-log'); if (log) log.scrollTop = log.scrollHeight;
+  }
+
+  function battleEnemySlot(mon){
+    if (!mon) return `<div class="enemy-slot"><div class="sprite" style="opacity:.18"></div></div>`;
+    const max=maxStats(mon), rate=Math.max(0,Math.min(100,Math.round(mon.currentHp/max.hp*100)));
+    return `<div class="enemy-slot"><div class="sprite ${speciesCss(mon)}"></div><div class="enemy-name">${escapeHtml(mon.nickname)}</div><div class="enemy-hp"><div class="bar"><div class="fill ${rate<35?'low':''}" style="width:${rate}%"></div></div><div class="tiny mini-outline" style="text-align:center;">HP ${mon.currentHp}/${max.hp}</div></div></div>`;
+  }
+  function allyCard(mon){
+    const max=maxStats(mon);
+    const hpRate=Math.max(0,Math.min(100,Math.round(mon.currentHp/max.hp*100))); const mpRate=Math.max(0,Math.min(100,Math.round(mon.currentMp/max.mp*100)));
+    return `<div class="ally-card"><div class="name text-outline">${escapeHtml(mon.nickname)}</div><div class="tiny mini-outline">${escapeHtml(species[mon.speciesId].name)} / Lv.${mon.level}</div><div class="tiny mini-outline">HP ${mon.currentHp}/${max.hp}</div><div class="bar"><div class="fill ${hpRate<35?'low':''}" style="width:${hpRate}%"></div></div><div class="tiny mini-outline">MP ${mon.currentMp}/${max.mp}</div><div class="bar"><div class="fill mp" style="width:${mpRate}%"></div></div></div>`;
+  }
+
+  function startDungeon(id){
+    if (party().length === 0) { setFieldPanel('party'); renderField(); return showToast('パーティを編成してください'); }
+    if (aliveParty().length === 0) return showToast('休憩で回復してください');
+    const d = dungeons.find(x=>x.id===id);
+    state.selectedDungeonId = id;
+    const encounter = generateEncounter(d,1,false);
+    state.battle = { dungeonId:id, floor:1, maxFloor:d.floors, enemies: encounter, log:[`${d.name} に入った！`,`第1層でモンスターと遭遇！`], status:'battle', reward:{exp:0,gold:0} };
+    ui.battleTurn = 1; saveState(); switchView('battle');
+  }
+  function generateEncounter(dungeon, floor, boss=false){ const count=boss?1:Math.min(3,1+Math.floor(Math.random()*Math.min(3,floor+1))); const ids=boss?[dungeon.boss]:Array.from({length:count},()=>randomPick(dungeon.enemies)); return ids.map(id=>{ const lv=Math.max(1,dungeon.recommended+floor-1+Math.floor(Math.random()*2)); const m=createMonster(id,lv); m.enemyId=uid(); return m; }); }
+  function addLog(text){ state.battle.log.push(text); if (state.battle.log.length>80) state.battle.log.shift(); }
+  function dealDamage(attacker, defender, multiplier, label, skill=null){ const a=maxStats(attacker), d=maxStats(defender); const atkBase = skill && ['magic','fire','water','storm'].includes(skill.type) ? a.wis*1.25 : a.atk; const defBase = d.def + (defender.tempDef || 0); const variance=0.88+Math.random()*0.24; const raw=Math.max(3,Math.floor((atkBase*multiplier - defBase*.45 + attacker.level*2)*variance)); defender.currentHp=Math.max(0, defender.currentHp-raw); addLog(`${attacker.nickname}の${label}！ ${defender.nickname}に${raw}ダメージ。`); if (defender.currentHp<=0) addLog(`${defender.nickname}を倒した！`); }
+  function playerAttack(){ const ally=aliveParty()[0]; const enemy=state.battle.enemies.find(e=>e.currentHp>0); if(!ally||!enemy)return; dealDamage(ally,enemy,1.0,'通常攻撃'); postPlayerAction(); }
+  function playerSkill(){ const ally=aliveParty()[0]; const enemy=state.battle.enemies.find(e=>e.currentHp>0); if(!ally||!enemy)return; const usable=ally.skills.filter(id => (skills[id]?.mp || 0) <= ally.currentMp); if(!usable.length){ addLog(`${ally.nickname}はMPが足りない！`); saveState(); renderBattle(); return; } const skillId=usable[0]; const sk=skills[skillId]; ally.currentMp -= sk.mp; if(sk.type==='heal'){ const target = party().filter(m=>m.currentHp>0).sort((a,b)=>(a.currentHp/maxStats(a).hp)-(b.currentHp/maxStats(b).hp))[0] || ally; const amount=Math.max(12,Math.floor(maxStats(ally).wis*Math.abs(sk.power))); const max=maxStats(target); target.currentHp=Math.min(max.hp,target.currentHp+amount); addLog(`${ally.nickname}は${sk.name}を使い、${target.nickname}を${amount}回復した！`); } else if(sk.type==='buff'){ ally.tempDef=(ally.tempDef||0)+5; addLog(`${ally.nickname}は${sk.name}で身を固めた！`); } else { dealDamage(ally,enemy,sk.power,sk.name,sk); } postPlayerAction(); }
+  function useBattleItem(){ const ally = aliveParty()[0]; if (!ally) return; if ((state.items['癒しの葉']||0)>0 && confirm('癒しの葉を使って先頭の仲間を回復しますか？')) { const max=maxStats(ally); ally.currentHp=Math.min(max.hp, ally.currentHp+40); state.items['癒しの葉']--; addLog(`${ally.nickname}は癒しの葉で回復した！`); postPlayerAction(); return; } showToast('使える道具がありません'); }
+  function playerScout(){ const enemy=state.battle.enemies.find(e=>e.currentHp>0); const ally=aliveParty()[0]; if(!enemy||!ally)return; const itemBonus=(state.items['スカウトビスケット']||0)>0?20:0; let usedItem=false; if(itemBonus && confirm('スカウトビスケットを使って勧誘率を上げますか？')){ state.items['スカウトビスケット']--; usedItem=true; } const sp=species[enemy.speciesId], max=maxStats(enemy); const hpFactor=Math.round((1-enemy.currentHp/max.hp)*35); const rankPenalty=rankValue[sp.rank]*5; const levelBonus=Math.max(0,ally.level-enemy.level)*2; const rate=Math.max(5, Math.min(85, sp.scoutRate + hpFactor + itemBonus + levelBonus - rankPenalty)); const roll=Math.random()*100; addLog(`${enemy.nickname}を勧誘！ 成功率${rate}%${usedItem?'（ビスケット使用）':''}`); if(roll<rate){ const newMon=createMonster(enemy.speciesId, Math.max(1, enemy.level-1)); state.owned.push(newMon); state.codex=unique([...state.codex, enemy.speciesId]); enemy.currentHp=0; addLog(`${enemy.nickname}が仲間になった！`); } else { addLog(`${enemy.nickname}は警戒している……`); } postPlayerAction(); }
+  function enemyTurn(){ const enemies=state.battle.enemies.filter(e=>e.currentHp>0); for(const enemy of enemies){ const targets=aliveParty(); if(!targets.length) break; const target=randomPick(targets); const sk=skills[randomPick(enemy.skills)] || null; if(sk && sk.mp<=enemy.currentMp && sk.type!=='heal' && sk.type!=='buff'){ enemy.currentMp -= sk.mp; dealDamage(enemy,target,sk.power*.88,sk.name,sk); } else { dealDamage(enemy,target,.82,'攻撃'); } } }
+  function checkBattleEnd(){ const b=state.battle; if(!aliveParty().length){ addLog('味方が全滅した……'); b.status='lose'; return true; } if(!b.enemies.some(e=>e.currentHp>0)){ const exp=b.enemies.reduce((sum,e)=>sum+12+e.level*5+rankValue[species[e.speciesId].rank]*4,0); const gold=b.enemies.reduce((sum,e)=>sum+8+e.level*3,0); b.reward.exp += exp; b.reward.gold += gold; addLog(`勝利！ 経験値${exp} / ${gold}Gを獲得予定。`); gainExp(exp); if(b.floor >= b.maxFloor){ b.status='dungeonClear'; addLog(`${dungeons.find(d=>d.id===b.dungeonId).name}を踏破した！`); } else { b.status='floorClear'; } return true; } return false; }
+  function postPlayerAction(){ if (checkBattleEnd()) { saveState(); renderBattle(); return; } enemyTurn(); ui.battleTurn += 1; checkBattleEnd(); saveState(); renderBattle(); if (ui.autoBattle && state.battle?.status==='battle') setTimeout(()=>playerAttack(), 380); }
+  function gainExp(exp){ for (const m of aliveParty()) { m.exp += exp; while (m.exp >= expToNext(m.level)) { m.exp -= expToNext(m.level); levelUp(m); } } }
+  function expToNext(level){ return 30 + level * 18; }
+  function levelUp(mon){ mon.level += 1; const newMax=maxStats(mon); mon.currentHp=newMax.hp; mon.currentMp=newMax.mp; addLog(`${mon.nickname}はLv.${mon.level}になった！`); }
+  function toggleAutoBattle(){ ui.autoBattle = !ui.autoBattle; renderBattle(); showToast(`オート ${ui.autoBattle ? 'ON' : 'OFF'}`); if (ui.autoBattle && state.battle?.status==='battle') setTimeout(()=>playerAttack(), 380); }
+  function toggleBattleSpeed(){ ui.battleSpeed = ui.battleSpeed === '通常速度' ? '高速' : '通常速度'; renderBattle(); }
+  function escapeBattle(){ const ok=Math.random()<0.72; if(ok){ addLog('うまく逃げ切った！'); state.battle=null; saveState(); showToast('拠点に戻りました'); switchView('field'); } else { addLog('逃げられなかった！'); enemyTurn(); ui.battleTurn += 1; checkBattleEnd(); saveState(); renderBattle(); } }
+  function nextFloor(){ const b=state.battle; const dungeon=dungeons.find(d=>d.id===b.dungeonId); b.floor += 1; b.status='battle'; const eventRoll=Math.random(); if(eventRoll<.18){ const gold=20 + b.floor*15; b.reward.gold += gold; addLog(`宝箱を発見！ ${gold}Gを入手予定。`); } else if(eventRoll<.30){ for(const m of party()){ if(m.currentHp>0){ const max=maxStats(m); m.currentHp=Math.min(max.hp, m.currentHp+25); m.currentMp=Math.min(max.mp, m.currentMp+8); } } addLog('澄んだ泉で少し回復した。'); } else { addLog('通路を慎重に進んだ。'); } const boss=b.floor >= b.maxFloor; b.enemies = generateEncounter(dungeon,b.floor,boss); addLog(boss ? 'ボスの気配がする！' : `第${b.floor}層で敵と遭遇！`); saveState(); renderBattle(); }
+  function finishDungeon(){ const b=state.battle; const dungeon=dungeons.find(d=>d.id===b.dungeonId); state.gold += b.reward.gold + dungeon.reward.gold; state.items[dungeon.reward.item]=(state.items[dungeon.reward.item]||0)+1; state.progress.cleared = unique([...state.progress.cleared, dungeon.id]); state.codex = unique([...state.codex, ...dungeon.enemies, dungeon.boss]); state.battle = null; saveState(); showToast(`${dungeon.name}クリア！ 報酬を獲得しました`); switchView('field'); setFieldPanel('overview'); }
+  function finishLose(){ for(const m of party()){ const max=maxStats(m); m.currentHp=Math.max(1, Math.floor(max.hp*.35)); m.currentMp=Math.max(0, Math.floor(max.mp*.25)); } state.gold = Math.max(0, state.gold - 20); state.battle = null; saveState(); switchView('field'); showToast('拠点に戻りました'); }
+
+  function renderEvent(){
+    const el = document.getElementById('eventView');
+    const scene = ui.currentEvent ? eventScenes[ui.currentEvent] : null;
+    const row = scene ? scene[ui.eventIndex] : null;
+    el.innerHTML = `
+      <div class="event-layout">
+        ${topBar('イベント')}
+        <div class="event-scene">
+          <div class="event-arch"></div>
+          <div class="player-sprite"></div>
+          <div class="companion-sprite"></div>
+          <div class="npc"></div>
+          <div class="mentor-sprite"></div>
+          <div class="monster-friend"></div>
+        </div>
+        <div class="wood-panel dialogue-panel"><div class="panel-inner">
+          <div>
+            <div class="speaker">${row ? escapeHtml(row.speaker) : '案内'}</div>
+            <div class="dialogue-text">${row ? escapeHtml(row.text) : 'イベントはありません。'}</div>
+          </div>
+          <div class="event-controls">
+            <button class="small-btn" onclick="skipEvent()">スキップ</button>
+            <button class="wide-btn" style="width:auto;min-width:150px;" onclick="nextEventLine()">次へ ▶</button>
+          </div>
+        </div></div>
+      </div>`;
+  }
+  function showEvent(sceneId){ ui.currentEvent = sceneId; ui.eventIndex = 0; switchView('event'); }
+  function nextEventLine(){ const scene = eventScenes[ui.currentEvent]; if (!scene) return switchView('field'); ui.eventIndex += 1; if (ui.eventIndex >= scene.length) { ui.currentEvent=null; ui.eventIndex=0; switchView('field'); return; } renderEvent(); }
+  function skipEvent(){ ui.currentEvent=null; ui.eventIndex=0; switchView('field'); }
+  function startAdventure(){ if (!localStorage.getItem(STORAGE_KEY)) { state = defaultState(); saveState(); } showEvent('intro'); }
+  function quickContinue(){ switchView('field'); }
+  function openSaveLoadFromTitle(){ switchView('field'); setFieldPanel('settings'); showToast('セーブ/ロードは設定メニューから操作できます'); }
+  function openSettingsFromTitle(){ switchView('field'); setFieldPanel('settings'); }
+  function showLicense(){ alert('Original UI prototype\nAll art and interface styling in this prototype are newly composed for this demo.'); }
+
+  window.switchView = switchView;
+  window.startAdventure = startAdventure;
+  window.quickContinue = quickContinue;
+  window.openSaveLoadFromTitle = openSaveLoadFromTitle;
+  window.openSettingsFromTitle = openSettingsFromTitle;
+  window.showLicense = showLicense;
+  window.setFieldPanel = setFieldPanel;
+  window.selectDungeon = selectDungeon;
+  window.addToParty = addToParty;
+  window.removeFromParty = removeFromParty;
+  window.clearParty = clearParty;
+  window.autoParty = autoParty;
+  window.renameMonster = renameMonster;
+  window.useHealItem = useHealItem;
+  window.healParty = healParty;
+  window.toggleConsumeParents = toggleConsumeParents;
+  window.executeFusion = executeFusion;
+  window.startDungeon = startDungeon;
+  window.playerAttack = playerAttack;
+  window.playerSkill = playerSkill;
+  window.playerScout = playerScout;
+  window.useBattleItem = useBattleItem;
+  window.toggleAutoBattle = toggleAutoBattle;
+  window.toggleBattleSpeed = toggleBattleSpeed;
+  window.escapeBattle = escapeBattle;
+  window.nextFloor = nextFloor;
+  window.finishDungeon = finishDungeon;
+  window.finishLose = finishLose;
+  window.showEvent = showEvent;
+  window.nextEventLine = nextEventLine;
+  window.skipEvent = skipEvent;
+  window.saveNow = saveNow;
+  window.resetGame = resetGame;
+  window.ui = ui;
+  window.state = state;
+
+  render();
+  </script>
+</body>
+</html>
