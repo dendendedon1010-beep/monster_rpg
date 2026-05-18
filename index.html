@@ -2113,6 +2113,9 @@
   #battleView.v196-busy .command-btn,
   #battleView.v196-busy .submenu-btn,
   #battleView.v196-busy .mini-switch { pointer-events: none; opacity: .72; }
+  #battleView.v202-selecting .command-btn,
+  #battleView.v202-selecting .submenu-btn,
+  #battleView.v202-selecting .mini-switch { pointer-events: auto !important; opacity: 1 !important; }
 </style>
 
 
@@ -5587,12 +5590,6 @@
     return result;
   };
 
-  const battleView = document.getElementById('battleView');
-  if (battleView) {
-    const observer = new MutationObserver(() => requestAnimationFrame(applyBattleUiTweaks));
-    observer.observe(battleView, { childList: true, subtree: true });
-  }
-
   window.addEventListener('resize', () => requestAnimationFrame(applyBattleUiTweaks));
   setTimeout(applyBattleUiTweaks, 0);
 
@@ -6357,11 +6354,6 @@
     return result;
   };
 
-  const battleView = document.getElementById('battleView');
-  if (battleView) {
-    const observer = new MutationObserver(() => requestAnimationFrame(decorateBattle));
-    observer.observe(battleView, { childList: true, subtree: true });
-  }
   window.addEventListener('resize', () => requestAnimationFrame(decorateBattle));
   setTimeout(decorateBattle, 0);
 
@@ -7249,6 +7241,349 @@
   const prev=window.renderBattle; if(typeof prev==='function'){ window.renderBattle=function(){ const r=prev.apply(this,arguments); requestAnimationFrame(patchOrderSkillButton); return r; }; }
   setTimeout(patchOrderSkillButton,0);
   window.MonsterRpgV201={version:'2.0.1'};
+})();
+</script>
+
+
+<script id="v202-battle-immediate-lightweight-script">
+(function(){
+  "use strict";
+
+  const getState = () => window.state || window.v18ctx?.state;
+  const getUi = () => window.ui || window.v18ctx?.ui;
+  const battle = () => getState()?.battle || null;
+  const partyList = () => (typeof window.party === 'function' ? window.party() : window.v18ctx?.party?.()) || [];
+  const alivePartyList = () => (typeof window.aliveParty === 'function' ? window.aliveParty() : partyList().filter(mon => mon.currentHp > 0)) || [];
+  const maxStatsOf = mon => (typeof window.maxStats === 'function' ? window.maxStats(mon) : window.v18ctx?.maxStats?.(mon)) || { hp: Math.max(mon?.currentHp || 1, 1) };
+  const skillMap = () => window.skills || window.v18ctx?.skills || {};
+  const save = () => { try { (window.saveState || window.v18ctx?.saveState)?.(); } catch(e){} };
+
+  function compactLog(text){
+    return String(text || '')
+      .replace(/パーティ全員の命令がそろった！「戦う」で行動開始。?/g, '全員の命令完了。「戦う」で開始')
+      .replace(/残り(\d+)体の命令を選んでください。?/g, '残り$1体に命令してください')
+      .replace(/(.+?)に「(.+?)」を命令した。?/g, '$1 → $2')
+      .replace(/通常攻撃/g, '攻撃');
+  }
+
+  function latestLog(){
+    const logs = battle()?.log || [];
+    return compactLog(logs[logs.length - 1] || 'コマンド選択');
+  }
+
+  function syncNote(){
+    const note = document.querySelector('#battleView .v14-battle-note');
+    if (note) note.textContent = latestLog();
+  }
+
+  window.addLog = function(text){
+    const b = battle();
+    const line = compactLog(text);
+    if (b) b.log = [line];
+    syncNote();
+    return line;
+  };
+
+  function enemyHpClass(enemy){
+    if (!enemy || enemy.currentHp <= 0) return '';
+    const max = maxStatsOf(enemy);
+    const rate = max.hp > 0 ? enemy.currentHp / max.hp : 1;
+    if (rate <= 0.15) return 'is-danger';
+    if (rate < 0.5) return 'is-caution';
+    return '';
+  }
+
+  function enhanceEnemyNames(){
+    const b = battle();
+    if (!b) return;
+    const slots = document.querySelectorAll('#battleView .enemy-sprite-row .enemy-slot');
+    slots.forEach((slot, index) => {
+      slot.classList.remove('is-caution', 'is-danger');
+      const hpBox = slot.querySelector('.enemy-hp');
+      if (hpBox) hpBox.remove();
+      const cls = enemyHpClass(b.enemies?.[index]);
+      if (cls) slot.classList.add(cls);
+    });
+  }
+
+  function removeLegacyFx(){
+    document.querySelectorAll('#battleView .v14-effect-label, #battleView .v18-order-banner, #battleView .v191-target-overlay').forEach(el => el.remove());
+    if (!window.__v202ActionBusy) {
+      document.querySelectorAll('#battleView .v14-damage-pop, #battleView .v14-hit-flash').forEach(el => el.remove());
+    }
+  }
+
+  function ensureOverlay(layout){
+    let svg = layout.querySelector('.v194-target-overlay');
+    const w = Math.max(1, Math.round(layout.clientWidth));
+    const h = Math.max(1, Math.round(layout.clientHeight));
+    if (!svg) {
+      svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('class', 'v194-target-overlay');
+      svg.innerHTML = '<defs>' +
+        '<marker id="v202-arrow-attack" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#ffd56b"></path></marker>' +
+        '<marker id="v202-arrow-heal" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#72efad"></path></marker>' +
+        '<marker id="v202-arrow-buff" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,5 L0,10 z" fill="#76c7ff"></path></marker>' +
+      '</defs>';
+      layout.appendChild(svg);
+    }
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    while (svg.childNodes.length > 1) svg.removeChild(svg.lastChild);
+    return svg;
+  }
+
+  function point(rect, xPct, yPct, base){
+    return { x: rect.left - base.left + rect.width * xPct, y: rect.top - base.top + rect.height * yPct };
+  }
+
+  function drawPath(svg, d, kind, labelPos, label){
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('class', `arrow-path ${kind}`);
+    path.setAttribute('marker-end', `url(#v202-arrow-${kind})`);
+    svg.appendChild(path);
+    if (label && labelPos) {
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', String(labelPos.x));
+      text.setAttribute('y', String(labelPos.y));
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('class', 'arrow-label');
+      text.textContent = label;
+      svg.appendChild(text);
+    }
+  }
+
+  function renderTargetArrows(){
+    const b = battle();
+    const ui = getUi();
+    if (!b || ui?.view !== 'battle') return;
+    const layout = document.querySelector('#battleView .battle-layout');
+    if (!layout) return;
+    const svg = ensureOverlay(layout);
+    const entries = Object.entries(b.commandQueue || {});
+    if (!entries.length) return;
+
+    const allyCards = Array.from(document.querySelectorAll('#battleView .ally-row .ally-card'));
+    const enemySlots = Array.from(document.querySelectorAll('#battleView .enemy-sprite-row .enemy-slot'));
+    if (!allyCards.length) return;
+
+    const layoutRect = layout.getBoundingClientRect();
+    const members = partyList();
+    const allyIndexByUid = new Map(members.map((mon, index) => [mon.uid, index]));
+
+    entries.forEach(([uid, cmd]) => {
+      const sourceIndex = allyIndexByUid.get(uid);
+      const sourceEl = sourceIndex != null ? allyCards[sourceIndex] : null;
+      if (!sourceEl || !cmd) return;
+
+      let targetEl = null;
+      let kind = 'attack';
+      let label = '攻撃';
+      if (cmd.type === 'skill') {
+        const sk = skillMap()[cmd.skillId];
+        label = sk?.name || '特技';
+        if (sk?.type === 'heal' || sk?.type === 'buff') {
+          kind = sk.type === 'heal' ? 'heal' : 'buff';
+          const targetIndex = members.findIndex(mon => mon.uid === (cmd.targetUid || uid));
+          targetEl = targetIndex >= 0 ? allyCards[targetIndex] : sourceEl;
+        } else {
+          targetEl = enemySlots[cmd.targetIndex] || enemySlots.find(el => !el.classList.contains('defeated') && !el.classList.contains('v14-defeated'));
+        }
+      } else {
+        targetEl = enemySlots[cmd.targetIndex] || enemySlots.find(el => !el.classList.contains('defeated') && !el.classList.contains('v14-defeated'));
+      }
+      if (!targetEl) return;
+
+      const sourceRect = sourceEl.getBoundingClientRect();
+      const targetRect = targetEl.getBoundingClientRect();
+      const start = point(sourceRect, 0.5, 0.02, layoutRect);
+      const end = targetEl.classList.contains('ally-card') ? point(targetRect, 0.5, 0.18, layoutRect) : point(targetRect, 0.5, 0.78, layoutRect);
+      const midY = Math.min(start.y, end.y) + (targetEl.classList.contains('ally-card') ? -26 : -58);
+      const d = `M ${start.x} ${start.y} C ${start.x} ${midY}, ${end.x} ${midY}, ${end.x} ${end.y}`;
+      drawPath(svg, d, kind, { x: (start.x + end.x) / 2, y: midY - 6 }, label.length <= 6 ? label : '');
+    });
+  }
+
+  function decorateBattle(){
+    if (!window.__v202ActionBusy) setActionBusy(false);
+    removeLegacyFx();
+    enhanceEnemyNames();
+    renderTargetArrows();
+    syncNote();
+  }
+
+  let renderQueued = false;
+  function afterRender(){
+    if (renderQueued) return;
+    renderQueued = true;
+    requestAnimationFrame(() => {
+      renderQueued = false;
+      decorateBattle();
+    });
+  }
+
+  const baseRenderBattle = window.renderBattle;
+  if (typeof baseRenderBattle === 'function') {
+    window.renderBattle = function(){
+      const result = baseRenderBattle.apply(this, arguments);
+      afterRender();
+      return result;
+    };
+  }
+
+  function renderBattleNow(){
+    try { window.renderBattle?.(); } catch(e){}
+  }
+
+  function setActionBusy(flag){
+    window.__v202ActionBusy = Boolean(flag);
+    const view = document.getElementById('battleView');
+    if (view) {
+      view.classList.toggle('v14-command-lock', window.__v202ActionBusy);
+      view.classList.toggle('v196-busy', window.__v202ActionBusy);
+      view.classList.toggle('v202-selecting', !window.__v202ActionBusy);
+    }
+  }
+
+  function immediate(fn){
+    return function(){
+      const result = fn.apply(this, arguments);
+      setActionBusy(false);
+      decorateBattle();
+      return result;
+    };
+  }
+
+  window.openBattleMenu = immediate(function(menu){
+    const ui = getUi();
+    const b = battle();
+    if (!ui) return;
+    if (menu === 'orderAlly' && b) b.commandQueue = {};
+    if (menu === 'scoutTarget' && b?.scoutAttempted) {
+      window.addLog('この戦闘でスカウトできるのは1体だけです');
+      ui.battleMenu = 'main';
+      renderBattleNow();
+      return;
+    }
+    ui.battleMenu = menu;
+    ui.selectedAllyId = null;
+    ui.selectedSkillId = null;
+    ui.selectedItemName = null;
+    renderBattleNow();
+  });
+
+  window.backBattleMenu = () => window.openBattleMenu('main');
+
+  function getOwned(uid){ return (typeof window.getOwned === 'function' ? window.getOwned(uid) : window.v18ctx?.getOwned?.(uid)) || null; }
+  function ready(){
+    const q = battle()?.commandQueue || {};
+    const ids = alivePartyList().map(mon => mon.uid);
+    return ids.length > 0 && ids.every(id => q[id]);
+  }
+  function commandLabel(cmd){
+    if (!cmd) return '未設定';
+    if (cmd.type === 'attack') return '攻撃';
+    return skillMap()[cmd.skillId]?.name || '特技';
+  }
+  function queueOrder(uid, cmd){
+    const b = battle();
+    const ui = getUi();
+    if (!b || !ui || !uid || !cmd) return;
+    b.commandQueue = b.commandQueue || {};
+    b.commandQueue[uid] = cmd;
+    window.addLog(`${getOwned(uid)?.nickname || '仲間'} → ${commandLabel(cmd)}`);
+    ui.selectedAllyId = null;
+    ui.selectedSkillId = null;
+    if (ready()) {
+      ui.battleMenu = 'main';
+      window.addLog('全員の命令完了。「戦う」で開始');
+    } else {
+      ui.battleMenu = 'orderAlly';
+      window.addLog(`残り${alivePartyList().filter(mon => !b.commandQueue[mon.uid]).length}体に命令してください`);
+    }
+    save();
+    renderBattleNow();
+  }
+
+  window.selectOrderAlly = immediate(function(uid){
+    const b = battle();
+    const ui = getUi();
+    if (!b || !ui) return;
+    if (b.commandQueue?.[uid]) {
+      window.addLog('この仲間は命令済みです');
+      return;
+    }
+    ui.selectedAllyId = uid;
+    ui.selectedSkillId = null;
+    ui.battleMenu = 'orderSkill';
+    renderBattleNow();
+  });
+
+  window.queueNormalAttackOrder = immediate(function(){
+    const ui = getUi();
+    const b = battle();
+    const enemy = (b?.enemies || []).find(mon => mon.currentHp > 0);
+    if (!ui || !b || !enemy) return;
+    queueOrder(ui.selectedAllyId, { type:'attack', targetIndex:b.enemies.indexOf(enemy) });
+  });
+
+  window.selectOrderSkill = immediate(function(skillId){
+    const ui = getUi();
+    const mon = getOwned(ui?.selectedAllyId);
+    const sk = skillMap()[skillId];
+    if (!ui || !mon || !sk) return;
+    if ((mon.currentMp || 0) < sk.mp) {
+      window.addLog('MPが足りません');
+      return;
+    }
+    ui.selectedSkillId = skillId;
+    if (sk.type === 'heal') ui.battleMenu = 'orderAllyTarget';
+    else if (sk.type === 'buff') queueOrder(mon.uid, { type:'skill', skillId, targetUid:mon.uid });
+    else ui.battleMenu = 'orderTarget';
+    renderBattleNow();
+  });
+
+  window.selectOrderTarget = immediate(function(index){
+    const ui = getUi();
+    const b = battle();
+    const mon = getOwned(ui?.selectedAllyId);
+    const enemy = b?.enemies?.[index];
+    if (!ui || !b || !mon || !enemy || enemy.currentHp <= 0) return;
+    queueOrder(mon.uid, { type:'skill', skillId:ui.selectedSkillId, targetIndex:index });
+  });
+
+  window.selectOrderAllyTarget = immediate(function(uid){
+    const ui = getUi();
+    const mon = getOwned(ui?.selectedAllyId);
+    const target = getOwned(uid);
+    if (!ui || !mon || !target) return;
+    queueOrder(mon.uid, { type:'skill', skillId:ui.selectedSkillId, targetUid:uid });
+  });
+
+  const previousPlayerAttack = window.playerAttack;
+  window.playerAttack = async function(){
+    const b = battle();
+    if (!b || b.status !== 'battle') return;
+    setActionBusy(true);
+    try {
+      if (typeof previousPlayerAttack === 'function') return await previousPlayerAttack.apply(this, arguments);
+    } finally {
+      setActionBusy(false);
+      decorateBattle();
+    }
+  };
+
+  document.addEventListener('click', function(ev){
+    const btn = ev.target?.closest?.('#battleView button.command-btn, #battleView button.v199-fight-btn');
+    if (!btn || btn.textContent.trim() !== '戦う') return;
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    window.playerAttack();
+  }, true);
+
+  window.addEventListener('resize', afterRender);
+  setTimeout(decorateBattle, 0);
+  window.MonsterRpgV202 = { version:'2.0.2', decorateBattle };
 })();
 </script>
 
