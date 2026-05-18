@@ -2372,6 +2372,11 @@
       console.warn(e); return defaultState();
     }
   }
+  function replaceState(next){
+    for (const key of Object.keys(state)) delete state[key];
+    Object.assign(state, next);
+    window.state = state;
+  }
   function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
   function maxStats(mon){ return statAt(mon.speciesId, mon.level, mon.bonus || {}); }
   function getOwned(id){ return state.owned.find(m=>m.uid===id); }
@@ -2820,7 +2825,7 @@
   function useHealItem(id){ if ((state.items['癒しの葉']||0)<=0) return showToast('癒しの葉がありません'); const mon=getOwned(id); const max=maxStats(mon); mon.currentHp=Math.min(max.hp, mon.currentHp+40); state.items['癒しの葉']--; saveState(); renderField(); showToast(`${mon.nickname}を回復しました`); }
   function healParty(){ if (state.gold < 30) return showToast('ゴールドが足りません'); state.gold -= 30; for (const m of party()) { const max=maxStats(m); m.currentHp=max.hp; m.currentMp=max.mp; } saveState(); render(); showToast('パーティが全回復しました'); }
   function saveNow(){ saveState(); showToast('手動保存しました'); }
-  function resetGame(){ if (!confirm('セーブデータを初期化します。よろしいですか？')) return; localStorage.removeItem(STORAGE_KEY); state = defaultState(); ui.fieldPanel='overview'; saveState(); render(); showToast('初期化しました'); }
+  function resetGame(){ if (!confirm('セーブデータを初期化します。よろしいですか？')) return; localStorage.removeItem(STORAGE_KEY); replaceState(defaultState()); ui.fieldPanel='overview'; saveState(); render(); showToast('初期化しました'); }
 
 
 
@@ -3113,7 +3118,7 @@
   function showEvent(sceneId){ ui.currentEvent = sceneId; ui.eventIndex = 0; switchView('event'); }
   function nextEventLine(){ const scene = eventScenes[ui.currentEvent]; if (!scene) return switchView('field'); ui.eventIndex += 1; if (ui.eventIndex >= scene.length) { ui.currentEvent=null; ui.eventIndex=0; switchView('field'); return; } renderEvent(); }
   function skipEvent(){ ui.currentEvent=null; ui.eventIndex=0; switchView('field'); }
-  function startAdventure(){ if (!localStorage.getItem(STORAGE_KEY)) { state = defaultState(); saveState(); } showEvent('intro'); }
+  function startAdventure(){ if (!localStorage.getItem(STORAGE_KEY)) { replaceState(defaultState()); saveState(); } showEvent('intro'); }
   function quickContinue(){ switchView('field'); }
   function openSaveLoadFromTitle(){ switchView('field'); setFieldPanel('settings'); showToast('セーブ/ロードは設定メニューから操作できます'); }
   function openSettingsFromTitle(){ switchView('field'); setFieldPanel('settings'); }
@@ -3199,6 +3204,7 @@
     levelUp,
     renderBattle,
     saveState,
+    replaceState,
     createMonster,
     unique,
     showToast,
