@@ -5179,7 +5179,13 @@
       </div>
       <div class="tiny muted" style="margin-top:5px;">全員分を設定したら「戦う」で行動開始します。</div>`;
 
-    grid.parentNode.insertBefore(banner, grid);
+    if (grid.parentNode && typeof grid.parentNode.insertBefore === "function") {
+      grid.parentNode.insertBefore(banner, grid);
+    } else if (typeof grid.before === "function") {
+      grid.before(banner);
+    } else if (typeof grid.prepend === "function") {
+      grid.prepend(banner);
+    }
   }
 
   function escapeHtmlV18(str) {
